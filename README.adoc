@@ -1,0 +1,36 @@
+= Synchronization tests
+
+This repository contains tests for Synchronization use cases.
+
+== Directory layout
+
+Each test case comprises a set of files contained in a subdirectory under the
+`tests` directory. Subdirectories may be nested to an arbitrary degree. A
+subdirectory containing one or more files hosts a test case. Any subdirectories
+under a test case are for files related to that test case (they do not contain
+new test cases: test cases do not nest).
+
+== Test identifiers
+
+The relative directory path of a test case under `tests` is a locally unique
+identifier. Each relative directory path must form a valid
+https://www.rfc-editor.org/info/rfc3986[URI relative reference].
+
+Each test case also has a canonical identifier, which is an
+https://www.rfc-editor.org/info/rfc3986[absolute URI]. The canonical identifier
+is permanently associated with the test case procedure and expected behaviour as
+specified at the time the test case is first (publicly) published.
+
+All test cases are expected to share a common base URI (an
+https://www.rfc-editor.org/info/rfc3986[absolute URI]), with the canonical
+identifier formed by resolving the relative directory path against the common
+base URI (per https://www.rfc-editor.org/info/rfc3986[Reference Resolution]).
+
+== Test case files
+
+Each test case comprises a test specification with reference implementation(s).
+A test specification is a written description of the test case and procedure.
+Each reference implementation is software, codification of the test case. If
+more than one reference implementation is provided then each implementation must
+codify the same test behaviour (all reference implementations must return the
+same test result for the same test conditions/observations).
