@@ -1,0 +1,50 @@
+= G.8272 time-error-in-locked-mode PRTC-A (unfiltered)
+
+This test verifies that the unfiltered time error of the
+https://www.itu.int/rec/T-REC-G.8272/en[PRTC-A] indicates accurate time output
+under normal, locked operating conditions.
+
+== Goal
+
+Verify that the time output under normal, locked operating conditions is
+accurate to within 100ns.
+
+== Scope
+
+* Ignore time output samples in an initial transient window
+* Verify time output accuracy in the test window
+
+== Out of scope
+
+* Set up the System Under Test (SUT)
+* Ensure the SUT is connected to an applicable primary time standard
+* Establish normal, locked operating conditions
+
+== Acceptance criteria
+
+1. No sample in the test window has a time error greater than 100ns
+2. The time output is locked for the test window
+
+== Test configuration
+
+_<empty>_
+
+== Test procedure
+
+1. _<empty>_
+
+== Test execution
+
+_<empty>_
+
+=== Prerequisites
+
+* _<empty>_
+
+=== Begin the test
+
+* _<empty>_
+
+== Test result files
+
+_<empty>_
