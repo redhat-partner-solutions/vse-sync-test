@@ -11,40 +11,24 @@ accurate to within 100ns.
 
 == Scope
 
-* Ignore time output samples in an initial transient window
-* Verify time output accuracy in the test window
+* Ignore samples in an initial transient window
+* Verify accuracy in the test window
 
 == Out of scope
 
 * Set up the System Under Test (SUT)
-* Ensure the SUT is connected to an applicable primary time standard
+* Ensure the SUT is connected to an appropriate external reference clock
 * Establish normal, locked operating conditions
 
 == Acceptance criteria
 
-1. No sample in the test window has a time error greater than 100ns
+1. All samples in the test window have a time error less than 100ns
 2. The time output is locked for the test window
-
-== Test configuration
-
-_<empty>_
+3. The test window is at least 1000 seconds long
 
 == Test procedure
 
-1. _<empty>_
-
-== Test execution
-
-_<empty>_
-
-=== Prerequisites
-
-* _<empty>_
-
-=== Begin the test
-
-* _<empty>_
-
-== Test result files
-
-_<empty>_
+1. Provision SUT
+2. Lock the SUT to the external reference clock
+3. Capture at least 1000 seconds of `ts2phc` log data
+4. Verify log data meets acceptance criteria
