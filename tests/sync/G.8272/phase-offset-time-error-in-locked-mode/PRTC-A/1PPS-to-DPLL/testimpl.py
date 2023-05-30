@@ -12,8 +12,8 @@ import json
 from os.path import join as joinpath
 from os.path import dirname
 
-from vse_sync_pp.parsers.dpll import PhaseOffsetParser
-from vse_sync_pp.analyzers.ppsdpll import PhaseOffsetTimeErrorAnalyzer
+from vse_sync_pp.parsers.dpll import TimeErrorParser
+from vse_sync_pp.analyzers.ppsdpll import TimeErrorAnalyzer
 from vse_sync_pp.analyzers.analyzer import Config
 
 CONFIG = joinpath(dirname(__file__), 'config.yaml')
@@ -25,8 +25,8 @@ def refimpl(filename, encoding='utf-8'):
 
     Return a boolean test result from the analysis of logs in `filename`.
     """
-    parser = PhaseOffsetParser()
-    analyzer = PhaseOffsetTimeErrorAnalyzer(Config.from_yaml(CONFIG))
+    parser = TimeErrorParser()
+    analyzer = TimeErrorAnalyzer(Config.from_yaml(CONFIG))
     with open(filename, encoding=encoding) as fid:
         analyzer.collect(*parser.parse(fid))
     return analyzer.result
