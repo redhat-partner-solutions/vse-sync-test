@@ -8,7 +8,7 @@ https://www.itu.int/rec/T-REC-G.8272/en[G.8272 Section 6.1] specifies
 requirements on the accuracy of the time output of
 https://www.itu.int/rec/T-REC-G.8272/en[PRTC-A] under normal, locked conditions.
 This test focusses on one observation point in this system: the internal path
-from between the 1PPS input received by the DPLL and 1PPS Out of the DPLL. The purpose of this test is to identify when the time error of the phase offset observed at this point is considered independently unacceptable.
+between the 1PPS input to the DPLL and the 1PPS output from the DPLL. The purpose of this test is to identify when the time error of the phase offset observed at this point is considered independently unacceptable.
 
 IMPORTANT: It is critical to note that the results of this test are only valid
 when both the test environment and the System Under Test (SUT) have been
