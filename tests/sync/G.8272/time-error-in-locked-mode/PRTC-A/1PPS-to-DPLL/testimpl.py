@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-### SPDX-License-Identifier: GPL-2.0
+### SPDX-License-Identifier: GPL-2.0-only
 
 """A reference implementation of test:
 
-sync/G.8272/time-error-in-locked-mode/PRTC-A/DPLL-to-PHC
+sync/G.8272/time-error-in-locked-mode/PRTC-A/1PPS-to-DPLL
 """
 
 from argparse import ArgumentParser
@@ -21,7 +21,7 @@ CONFIG = joinpath(dirname(__file__), 'config.yaml')
 def refimpl(filename, encoding='utf-8'):
     """A reference implementation of test:
 
-    sync/G.8272/phase-offset-time-error-in-locked-mode/PRTC-A/1PPS-to-DPLL
+    sync/G.8272/time-error-in-locked-mode/PRTC-A/1PPS-to-DPLL
 
     Return a boolean test result from the analysis of logs in `filename`.
     """
