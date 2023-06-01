@@ -12,6 +12,7 @@ import json
 from os.path import join as joinpath
 from os.path import dirname
 
+from vse_sync_pp.common import JsonEncoder
 from vse_sync_pp.parsers.ts2phc import TimeErrorParser
 from vse_sync_pp.analyzers.ts2phc import TimeErrorAnalyzer
 from vse_sync_pp.analyzers.analyzer import Config
@@ -23,21 +24,25 @@ def refimpl(filename, encoding='utf-8'):
 
     sync/G.8272/time-error-in-locked-mode/PRTC-A/DPLL-to-PHC
 
-    Return a boolean test result from the analysis of logs in `filename`.
+    Return a dict with test result, reason, analysis of logs in `filename`.
     """
     parser = TimeErrorParser()
     analyzer = TimeErrorAnalyzer(Config.from_yaml(CONFIG))
     with open(filename, encoding=encoding) as fid:
         analyzer.collect(*parser.parse(fid))
-    return analyzer.result
+    return {
+        'result': analyzer.result,
+        'reason': analyzer.reason,
+        'analysis': analyzer.analysis,
+    }
 
 def main():
-    """Run this test and print test result as JSON boolean to stdout"""
+    """Run this test and print test output as JSON to stdout"""
     aparser = ArgumentParser(description=main.__doc__)
     aparser.add_argument('input', help="log file to analyze")
     args = aparser.parse_args()
-    result = refimpl(args.input)
-    print(json.dumps(result))
+    output = refimpl(args.input)
+    print(json.dumps(output, cls=JsonEncoder))
 
 if __name__ == '__main__':
     main()
