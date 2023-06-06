@@ -5,6 +5,8 @@
 """A reference implementation for tests under:
 
 sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL
+
+Use a symbolic link to specify this as the reference implementation for a test.
 """
 
 from argparse import ArgumentParser
