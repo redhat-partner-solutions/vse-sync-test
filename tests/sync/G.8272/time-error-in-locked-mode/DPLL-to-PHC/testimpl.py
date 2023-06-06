@@ -16,7 +16,7 @@ from vse_sync_pp.analyzers.ts2phc import TimeErrorAnalyzer
 from vse_sync_pp.analyzers.analyzer import Config
 
 def refimpl(spec, filename, encoding='utf-8'):
-    """A reference implementation of test:
+    """A reference implementation for tests under:
 
     sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC
 
