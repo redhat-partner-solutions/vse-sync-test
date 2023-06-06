@@ -2,7 +2,7 @@
 
 ### SPDX-License-Identifier: GPL-2.0-only
 
-"""A reference implementation of test:
+"""A reference implementation for tests under:
 
 sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL
 """
