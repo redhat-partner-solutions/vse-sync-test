@@ -2,7 +2,7 @@ ifdef::env-github[]
 :important-caption: :heavy_exclamation_mark:
 endif::[]
 
-= G.8272 time-error-in-locked-mode PRTC-B 1PPS-to-DPLL
+= G.8272 time-error-in-locked-mode 1PPS-to-DPLL PRTC-B
 
 https://www.itu.int/rec/T-REC-G.8272/en[G.8272 Section 6.1] specifies
 requirements on the accuracy of the time output of
