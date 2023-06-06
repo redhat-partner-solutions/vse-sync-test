@@ -5,8 +5,6 @@
 """A reference implementation of test:
 
 sync/G.8272/time-error-in-locked-mode/PRTC-A/1PPS-to-DPLL
-
-Return a dict with test result, reason, analysis of logs in `filename`.
 """
 
 from argparse import ArgumentParser
@@ -26,7 +24,7 @@ def refimpl(filename, encoding='utf-8'):
 
     sync/G.8272/time-error-in-locked-mode/PRTC-A/1PPS-to-DPLL
 
-    Return a boolean test result from the analysis of logs in `filename`.
+    Return a dict with test result, reason, analysis of logs in `filename`.
     """
     parser = TimeErrorParser()
     analyzer = TimeErrorAnalyzer(Config.from_yaml(CONFIG))
