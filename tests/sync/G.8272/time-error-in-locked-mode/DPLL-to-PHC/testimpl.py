@@ -11,13 +11,17 @@ Use a symbolic link to specify this as the reference implementation for a test.
 
 from argparse import ArgumentParser
 import json
+from os.path import join as joinpath
+from os.path import dirname
 
 from vse_sync_pp.common import JsonEncoder
 from vse_sync_pp.parsers.ts2phc import TimeErrorParser
 from vse_sync_pp.analyzers.ts2phc import TimeErrorAnalyzer
 from vse_sync_pp.analyzers.analyzer import Config
 
-def refimpl(spec, filename, encoding='utf-8'):
+CONFIG = joinpath(dirname(__file__), 'config.yaml')
+
+def refimpl(filename, encoding='utf-8'):
     """A reference implementation for tests under:
 
     sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC
@@ -26,7 +30,7 @@ def refimpl(spec, filename, encoding='utf-8'):
     with requirements specified in `spec`.
     """
     parser = TimeErrorParser()
-    analyzer = TimeErrorAnalyzer(Config.from_yaml(spec))
+    analyzer = TimeErrorAnalyzer(Config.from_yaml(CONFIG))
     with open(filename, encoding=encoding) as fid:
         analyzer.collect(*parser.parse(fid))
     return {
@@ -38,10 +42,9 @@ def refimpl(spec, filename, encoding='utf-8'):
 def main():
     """Run this test and print test output as JSON to stdout"""
     aparser = ArgumentParser(description=main.__doc__)
-    aparser.add_argument('spec',help="test specification file")
     aparser.add_argument('input', help="log file to analyze")
     args = aparser.parse_args()
-    output = refimpl(args.spec, args.input)
+    output = refimpl(args.input)
     print(json.dumps(output, cls=JsonEncoder))
 
 if __name__ == '__main__':
