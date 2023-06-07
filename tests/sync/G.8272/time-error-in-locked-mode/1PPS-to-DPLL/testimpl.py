@@ -2,9 +2,11 @@
 
 ### SPDX-License-Identifier: GPL-2.0-only
 
-"""A reference implementation of test:
+"""A reference implementation for tests under:
 
-sync/G.8272/time-error-in-locked-mode/PRTC-A/DPLL-to-PHC
+sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL
+
+Use a symbolic link to specify this as the reference implementation for a test.
 """
 
 from argparse import ArgumentParser
@@ -13,16 +15,16 @@ from os.path import join as joinpath
 from os.path import dirname
 
 from vse_sync_pp.common import JsonEncoder
-from vse_sync_pp.parsers.ts2phc import TimeErrorParser
-from vse_sync_pp.analyzers.ts2phc import TimeErrorAnalyzer
+from vse_sync_pp.parsers.dpll import TimeErrorParser
+from vse_sync_pp.analyzers.ppsdpll import TimeErrorAnalyzer
 from vse_sync_pp.analyzers.analyzer import Config
 
 CONFIG = joinpath(dirname(__file__), 'config.yaml')
 
 def refimpl(filename, encoding='utf-8'):
-    """A reference implementation of test:
+    """A reference implementation for tests under:
 
-    sync/G.8272/time-error-in-locked-mode/PRTC-A/DPLL-to-PHC
+    sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL
 
     Return a dict with test result, reason, analysis of logs in `filename`.
     """

@@ -2,11 +2,11 @@ ifdef::env-github[]
 :important-caption: :heavy_exclamation_mark:
 endif::[]
 
-= G.8272 time-error-in-locked-mode PRTC-A DPLL-to-PHC
+= G.8272 time-error-in-locked-mode DPLL-to-PHC PRTC-B
 
 https://www.itu.int/rec/T-REC-G.8272/en[G.8272 Section 6.1] specifies
 requirements on the accuracy of the time output of
-https://www.itu.int/rec/T-REC-G.8272/en[PRTC-A] under normal, locked conditions.
+https://www.itu.int/rec/T-REC-G.8272/en[PRTC-B] under normal, locked conditions.
 This test focusses on one observation point in this system: the internal path
 from DPLL to PHC. The purpose of this test is to identify when the time error
 observed at this point is considered independently unacceptable.
@@ -20,7 +20,7 @@ defined here, it is noted that they include timestamping accuracy.
 
 Verify that the unfiltered time error introduced between DPLL and PHC under
 normal, locked operating conditions is not greater than 10% of the overall time
-output accuracy requirement for https://www.itu.int/rec/T-REC-G.8272/en[PRTC-A].
+output accuracy requirement for https://www.itu.int/rec/T-REC-G.8272/en[PRTC-B].
 
 == Scope
 
