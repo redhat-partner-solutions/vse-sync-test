@@ -34,3 +34,8 @@ Each reference implementation is software, codification of the test case. If
 more than one reference implementation is provided then each implementation must
 codify the same test behaviour (all reference implementations must return the
 same test result for the same test conditions/observations).
+
+== Getting Started
+Initialize the required python submodules:
+
+`git submodule update --init --recursive`
