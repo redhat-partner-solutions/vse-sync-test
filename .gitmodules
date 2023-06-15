@@ -1,0 +1,3 @@
+[submodule "vse-sync-pp"]
+	path = vse-sync-pp
+	url = git@github.com:redhat-partner-solutions/vse-sync-pp.git
