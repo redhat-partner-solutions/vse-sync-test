@@ -5,8 +5,8 @@ endif::[]
 = time-error-in-locked-mode PHC-to-SysClk RAN
 
 This test focusses on one observation point in this system: the internal path
-from PHC to the System Clock (SysClk). The purpose of this test is to identify when the time error
-observed at this point is considered independently unacceptable for RAN workloads.
+from PHC and System Clock (SysClk). The purpose of this test is to identify when the time error
+observed at this point is considered unacceptable for RAN workloads.
 
 IMPORTANT: It is critical to note that the results of this test are only valid
 when both the test environment and the System Under Test (SUT) have been
@@ -33,8 +33,8 @@ error allowed by RAN applications.
 == Acceptance criteria
 
 1. All samples in the test window have an unfiltered time error
-   of less than the overall time output accuracy requirement
-2. The time output is locked for the test window
+   of less than the overall time error requirement
+2. The time error is locked for the test window
 3. The test window is at least 1000 seconds long
 
 == Test procedure
