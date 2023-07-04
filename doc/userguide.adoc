@@ -1,0 +1,124 @@
+= VSE Sync Tests
+
+VSE Sync Tests test that PTP hardware and the OpenShift PTP Operator are running acceptably in a Telecoms Grand Master configuration on an OpenShift system.
+
+Running the VSE Sync Tests has two steps:
+
+* *Collection* - Obtaining logs and monitoring of the operator and hardware for a time window of interest.
+* *Analysis* - Processing the collected data to ensure the system was operating acceptably over the time window of interest.
+
+Both steps are intended to be run outside the cluster under test. This guide assumes you are using a RHEL system for this.
+
+*TODO: map collected data source to test(s) in a separate doc and import it here and in the top level readme*
+
+*TODO list which tests can be run against which data sources.*
+*DPLL-to-PHC uses logs from linuxptp-daemon-container*
+*analyze gnss/time-error takes data from collector gnss/time-error*
+*Analyse ppsdpll/time-error takes data from collector dpll/time-error*
+
+== Collecting Data
+
+The collector tools require Go to be available:
+
+  dnf install golang
+
+To get the tools for data collection you need to clone the repository:
+
+  git clone git@github.com:redhat-partner-solutions/vse-sync-testsuite.git
+  cd vse-sync-testsuite
+
+For convenience we will set up a few vars. The tool needs a `kubeconfig` with access to the `"openshift-ptp` namespace, the name of the PTP device, and a location to store output files.
+
+  export KUBECONFIG=~/kubeconfig
+  export PTPDEVICE=$(oc --kubeconfig ${KUBECONFIG} exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ls /sys/class/gnss/gnss0/device/net/)
+  export DATADIR=~/testdata
+  mkdir $DATADIR
+
+The collector tool will, by default, collect everything it can. For more specific details see the command help (`go run main.go --help`). The example command here will collect `1000` data samples at the default rate (once per second).
+
+*TODO: I think go will download all the dependencies itself, confirm this in a new system*
+
+  go run main.go --interface="${PTPDEVICE}" --kubeconfig="${KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --count=1000
+
+To collect one specific type of data use the `--collector` flag e.g. `--collector=DPLL`.
+
+Data collection will run and save to `${DATADIR}/collected.log`.
+
+*TODO: improve the error message when this happens*
+
+Note that there are occasional error messages related to GPS data missing. This can safely be ignored as the data collection will carry on.
+
+There is also a tool that will conveniently download logs of interest from the PTP operator and save them to a provided directory. You can do this yourself with `oc` if you prefer.
+
+  go run hack/grab_logs.go -k="${KUBECONFIG}" -o ${DATADIR} --since=1000s
+
+These tools can be run as a single command that will collect for a duration and then retrieve all logs of interest from that duration (this example uses 1000 seconds):
+
+  go run main.go --interface="${PTPDEVICE}" --kubeconfig="${KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --count=1000  && go run hack/grab_logs.go -k="${KUBECONFIG}" -o ${DATADIR} --since=1000s
+
+Once you have collected the data required for the test(s) you want to run you can being to analyse it.
+
+
+== Analysis Tools
+
+The analysis toolkit is itself broken into two main parts. They are designed to be used on the results of data collection, and to be chained together:
+
+* *Preparation* - these tools will load raw logs or collector output and prepare it for the analysers. There are also tools to demultiplex data from combined sources. These tools can also be used on data collected in the field from any cluster.
+* *Analysis* - Analysers check that the data being examined represent a system that is functioning acceptably.
+
+The preparation and analysis tools require Python 3, and pandas.
+
+  dnf install python3 python3-pandas
+
+Pull the code:
+
+  git clone git@github.com:redhat-partner-solutions/vse-sync-test.git
+  cd vse-sync-test && git submodule update --init --recursive
+  export PPPATH=$(pwd)/vse-sync-pp/src/
+
+Then the analysers can be run against the data collected. See the table above.
+
+
+=== Running a Reference Implementation
+
+In order to run the reference implementation of the DPLL-to-PHC test you must navigate to the directory containing the configuration and reference implementation. each one comes with two versions; PRTC-A and PRTC-B, to validate each spec level. From the root of the `vse-sync-test` repo run the following commands
+
+  TEST=./tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A
+  cd $TEST
+
+From there, make sure the `vse-sync-pp` submodule is in your `PYTHONPATH`, then the reference implementation can be run as follows, giving it the path to the logs you obtained earlier from the `linuxptp-daemon-container`.
+
+  env PYTHONPATH=${PPPATH} python3 ./testimpl.py ${DATADIR}/linuxptp-daemon-container-<timestamp>
+
+
+=== Run Analysis tools directly
+
+Other analysers need different input formats and can be run directly. This uses the same analysis code as the reference implementation, and will use the same config file as the reference implementation. In order to use this approach we need a new tool, the demuxer. The demuxer will take the output file from the collectors, filter out lines we aren't interested in, and convert the lines of interest into the correct format for the analyser. It is intended to have its output piped directly into the analyser.
+
+First, get the path to a PRTC-A or PRTC-B config depending on your requirements.
+
+  export CONFIGPATH=./tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/config.yaml
+
+Again make sure the `vse-sync-pp` module is on your `PYTHONPATH` then run the demuxer and pipe the output into the analyser:
+
+  PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux ${DATADIR}/collected.log gnss/time-error | PYTHONPATH=$PPPATH python3 -m vse_sync_pp.analyze --canonical --config=$TEST/config.yaml - gnss/time-error
+
+In the command above, `${DATADIR}/collected.log` is a file containing the output from the collector, the first `gnss/time-error` tells the demuxer tool which lines to process, and the final `gnss/time-error` means that the analyser will test that data. Each command has its own `help` if you want more details.
+
+== Results
+
+The results from any test will be a small json blob, the primary items of interest are the test result and, in the case of a failure, the reason for that failure. See the worked examples for more.
+
+
+== Examples
+
+=== Bad Data
+
+The files in datasets/bad were collected from a cluster running the PTP operator, but with the operator misconfigured and the clock badly out of sync. They will be ingested by the tests but result in failed tests.
+
+  cd ./tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A
+  env PYTHONPATH=../../../../../../vse-sync-pp/src python3 ./testimpl.py ~/vse-sync-test/datasets/bad/linuxptp-daemon-container-230705T103057
+
+This gives the output `{"result": false, "reason": "no data", "analysis": {}}`. The `"result" of `false` indicates a failed test, and the `"reason"` of `"no data"` is because the cluster is so badly out of sync that it does not give us working output.
+
+*TODO give more example datasets, commands to analyse them, and results explanation.*
