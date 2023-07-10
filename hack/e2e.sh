@@ -6,17 +6,17 @@ DURATION=1000
 
 usage() {
 	read -d '' usage_prompt <<- EOF
-	Usage: $0 -k KUBECONFIG -i INTERFACE_NAME [-d DURATION]
+	Usage: $0 -k KUBECONFIG [-i INTERFACE_NAME] [-d DURATION]
 
     Options (required):
         -k: Path to the kubeconfig to be used
-        -i: name of the interface to gather data about
 
     Options (optional):
+        -i: name of the interface to gather data about
         -d: How many seconds to run data collection.
     
     Example Usage:
-        $0 -k ~/kubeconfig -i ens7f1
+        $0 -k ~/kubeconfig
 
 	EOF
 
@@ -113,7 +113,7 @@ while [[ $1 == -* ]]; do
             exit 1
           fi ;;		  
       --) shift; break;;
-      -*) echo "invalid option: $1" 1>&2; usage;;
+      -*) echo "invalid option: $1" 1>&2; usage; exit 1;;
     esac
 done
 check_vars
