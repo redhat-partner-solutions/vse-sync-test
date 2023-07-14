@@ -1,0 +1,20 @@
+== Goal
+
+Verify the DPLL goes to holdover state from "Locked and Holdover acquired state" after the reference source is lost, validate the time sync is still maintained.
+
+== Scope
+
+Ensure the DPLL1/2 are in locked and holdover acquired state.
+
+== Out of scope
+
+Configuring the DPLL1/2 to holdover and acquired state.
+
+== Acceptance Criteria
+
+1. Enusre the GPS loss of signal or cut off 1PPS from GNSS module.
+2. Check the DPLL1/2 state transition to holdover.
+
+== Test Procedure
+
+1. Capture the DPLL log date and verify that log date meets the acceptance criteria.
