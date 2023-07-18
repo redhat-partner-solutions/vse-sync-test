@@ -46,7 +46,7 @@ check_vars() {
 	fi
 
     if [[ -z $INTERFACE_NAME ]]; then
-        INTERFACE_NAME=$(oc --kubeconfig=${LOCAL_KUBECONFIG} exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ls /sys/class/gnss/gnss0/device/net/)
+        INTERFACE_NAME=$(oc -n openshift-ptp --kubeconfig=${LOCAL_KUBECONFIG} exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ls /sys/class/gnss/gnss0/device/net/)
         echo "Discovered interface name: $INTERFACE_NAME"
     else    
         echo "Using interface name: $INTERFACE_NAME"
