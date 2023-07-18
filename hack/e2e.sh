@@ -64,8 +64,9 @@ check_vars() {
 collect_data() {
     echo "Collecting $DURATION seconds of data. Please wait..."
     cd $COLLECTORPATH
-    collection_ouput=$(go run main.go --interface="${INTERFACE_NAME}" --kubeconfig="${LOCAL_KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --count=${DURATION})
-    log_output=$(go run hack/grab_logs.go -k="${LOCAL_KUBECONFIG}" -o="${DATADIR}" --since="${DURATION}s")
+    collection_ouput=$(go run main.go collect --interface="${INTERFACE_NAME}" --kubeconfig="${LOCAL_KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --count=${DURATION})
+    # log_output=$(go run hack/grab_logs.go -k="${LOCAL_KUBECONFIG}" -o="${DATADIR}" --since="${DURATION}s")
+    log_output=$(go run main.go logs -k="${LOCAL_KUBECONFIG}" -o="${DATADIR}" --since="${DURATION}s")
 }
 
 analyse_data() {
