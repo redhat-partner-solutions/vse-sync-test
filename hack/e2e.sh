@@ -1,6 +1,6 @@
 #!/bin/sh
 # Start in the directory containing the `vse-sync-test` and `vse-sync-testsuite` repositories.
-
+set -e
 # defaults
 DURATION=1000
 
