@@ -1,0 +1,9 @@
+// TODO: build this from metadata
+[options="header"]
+|==================================================================================================
+| Test Identifier                                                 | Data Source(s)                 
+| G.8272/time-error-in-locked-mode/DPLL-to-PHC                    | Logs: linuxptp-daemon-container
+| G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver | Collector: gnss/time-error     
+| G.8272/time-error-in-locked-mode/1PPS-to-DPLL                   | Collector: dpll/time-error    
+| G.8272/time-error-in-locked-mode/                               | Logs: linuxptp-daemon-container
+|==================================================================================================

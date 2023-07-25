@@ -9,12 +9,7 @@ Running the VSE Sync Tests has two steps:
 
 Both steps are intended to be run outside the cluster under test. This guide assumes you are using a RHEL system for this.
 
-*TODO: map collected data source to test(s) in a separate doc and import it here and in the top level readme*
-
-*TODO list which tests can be run against which data sources.*
-*DPLL-to-PHC uses logs from linuxptp-daemon-container*
-*analyze gnss/time-error takes data from collector gnss/time-error*
-*Analyse ppsdpll/time-error takes data from collector dpll/time-error*
+include::catalogue.adoc[]
 
 == Collecting Data
 
@@ -36,15 +31,12 @@ For convenience we will set up a few vars. The tool needs a `kubeconfig` with ac
 
 The collector tool will, by default, collect everything it can. For more specific details see the command help (`go run main.go --help`). The example command here will collect `1000` data samples at the default rate (once per second).
 
-*TODO: I think go will download all the dependencies itself, confirm this in a new system*
-
   go run main.go --interface="${PTPDEVICE}" --kubeconfig="${KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --count=1000
 
 To collect one specific type of data use the `--collector` flag e.g. `--collector=DPLL`.
 
 Data collection will run and save to `${DATADIR}/collected.log`.
 
-*TODO: improve the error message when this happens*
 
 Note that there are occasional error messages related to GPS data missing. This can safely be ignored as the data collection will carry on.
 
