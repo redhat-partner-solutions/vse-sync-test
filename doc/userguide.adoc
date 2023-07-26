@@ -29,9 +29,13 @@ For convenience we will set up a few vars. The tool needs a `kubeconfig` with ac
   export DATADIR=~/testdata
   mkdir $DATADIR
 
+The collector tool includes a built-in tool that will allow you to perform some basic environment validations. These check the setup you have is one that is a valid test target, not that it is functioning correctly.
+
+  go run main.go env verify --interface="${PTPDEVICE}" --kubeconfig="${KUBECONFIG}"
+
 The collector tool will, by default, collect everything it can. For more specific details see the command help (`go run main.go --help`). The example command here will collect `1000` data samples at the default rate (once per second).
 
-  go run main.go --interface="${PTPDEVICE}" --kubeconfig="${KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --count=1000
+  go run main.go collect --interface="${PTPDEVICE}" --kubeconfig="${KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --duration=1000s
 
 To collect one specific type of data use the `--collector` flag e.g. `--collector=DPLL`.
 
@@ -42,11 +46,11 @@ Note that there are occasional error messages related to GPS data missing. This 
 
 There is also a tool that will conveniently download logs of interest from the PTP operator and save them to a provided directory. You can do this yourself with `oc` if you prefer.
 
-  go run hack/grab_logs.go -k="${KUBECONFIG}" -o ${DATADIR} --since=1000s
+  go run main.go logs -k="${KUBECONFIG}" -o ${DATADIR} --since=1000s
 
 These tools can be run as a single command that will collect for a duration and then retrieve all logs of interest from that duration (this example uses 1000 seconds):
 
-  go run main.go --interface="${PTPDEVICE}" --kubeconfig="${KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --count=1000  && go run hack/grab_logs.go -k="${KUBECONFIG}" -o ${DATADIR} --since=1000s
+  go run main.go collect --interface="${PTPDEVICE}" --kubeconfig="${KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --duration=1000s  && go run main.go logs -k="${KUBECONFIG}" -o ${DATADIR} --since=1000s
 
 Once you have collected the data required for the test(s) you want to run you can being to analyse it.
 
