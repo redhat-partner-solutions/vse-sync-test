@@ -36,6 +36,12 @@ codify the same test behaviour (all reference implementations must return the
 same test result for the same test conditions/observations).
 
 == Getting Started
+
 Initialize the required python submodules:
 
 `git submodule update --init --recursive`
+
+== Contributing to the repo
+
+See the link:doc/CONTRIBUTING.adoc[contribution guide] for detailed instructions on
+how to get started contributing to this repo.

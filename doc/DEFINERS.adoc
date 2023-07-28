@@ -1,0 +1,25 @@
+= Test definer guide
+
+== Allocate a unique test identifier
+
+To allocate a unique test identifier for your new test specification, simply create a new directory in the directory tree  `tests` and put your test specification in file `testspec.adoc` in that directory. The relative directory path under `tests` to the directory containing your new `testspec.adoc` file forms the relative identifier of the test, which is a relative URI reference. A test specification is detailed in a file named `testspec.adoc`.
+
+For instance, the test specification `testspec.adoc` for the calculation of the time accuracy in Telecom GrandMaster clock supporting Class A timing requirements can be found in this relative directory path `sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A`. The unique identifier denoted by the relative directory builds the following absolute test identifier: `https://github.com/redhat-partner-solutions/vse-sync-test/tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A`.
+
+== Write the specification
+
+Fill the test specification according to the following link:./testspec.adoc[template].
+
+== Publish the test specification
+
+All the developed test specifications must live in the main branch to be considered valid. A test specification that has made it to the `main` branch has its relative `test identifier` permanently allocated and is closed for modifications. 
+
+To get your test specification considered for review and eventually get published in the `main` branch of this repo you must submit a PR following these basic principles:
+
+* The PR must include, the test specification is intending to develop according to the following link:./testspec.adoc[template] indicating, amongst other fields, the relative `test identifier`.
+
+* The contributors must explicitly indicate in their PR, if the submitted test specification is still work in progress, and post an update, once the status of the pull request changes, otherwise maintainers of the repo will assume the the specification is ready for review, while it actually is not.
+
+* If the PR is still ongoing, but the contributor no longer wants to continue, then this should be communicated, so that someone else can pick it up or the PR will be closed.
+
+* Any submitted PR must be kept conflict free and rebased within reasonable time.

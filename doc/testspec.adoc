@@ -1,0 +1,41 @@
+ifdef::env-github[]
+:important-caption: :heavy_exclamation_mark:
+endif::[]
+
+= add relative subdirs separated by a white space under `tests/sync` containing new test spec
+
+add-main-focus-of-the-test
+
+IMPORTANT: It is critical to note that the results of this test are only valid
+when both the test environment and the System Under Test (SUT) have been
+independently validated. While requirements on their acceptability are not
+defined here, it is noted that they include timestamping accuracy.
+
+== Goal
+
+add-the-goal-of-your-new-test
+
+== Scope
+
+* In-scope test item 1
+* In-scope the test item 2
+* Add more scope as needed
+
+== Out of scope
+
+* Independent validation of the test environment
+* Independent validation of the SUT
+* Provision SUT
+* Add more out-of-scope items as needed
+
+== Acceptance criteria
+
+1. Acceptance criteria item 1
+2. Acceptance criteria item 2
+3. Add more acceptance criteria items as needed
+
+== Test procedure
+
+1. Step 1
+2. Step 2
+3. Add more steps as needed
