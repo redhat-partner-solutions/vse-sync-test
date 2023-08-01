@@ -29,15 +29,14 @@ WORKDIR ${VSE_DIR}
 RUN mkdir -p -m 0600 ~/.ssh && \
     ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 
-RUN --mount=type=ssh git clone --depth=1 git@github.com:redhat-partner-solutions/vse-sync-test.git  --branch container
+RUN --mount=type=ssh git clone --depth=1 git@github.com:redhat-partner-solutions/vse-sync-test.git --branch=integrate
 WORKDIR ${VSE_DIR}/vse-sync-test
 RUN --mount=type=ssh git submodule update --init --recursive
 
 WORKDIR ${VSE_DIR}
-RUN --mount=type=ssh git clone git@github.com:redhat-partner-solutions/vse-sync-testsuite.git --branch e2e-patched
-WORKDIR ${VSE_DIR}/vse-sync-testsuite
-# RUN git checkout 39031ef
+RUN --mount=type=ssh git clone git@github.com:redhat-partner-solutions/vse-sync-collection-tools.git
+WORKDIR ${VSE_DIR}/vse-sync-collection-tools
 RUN go build
 
 WORKDIR ${VSE_DIR}
-CMD ["./vse-sync-test/hack/e2e.sh", "-k", "/usr/vse/kubeconfig", "-d", "1250"]
+CMD ["./vse-sync-test/hack/e2e.sh", "-k", "/usr/vse/kubeconfig", "-d", "1500s"]

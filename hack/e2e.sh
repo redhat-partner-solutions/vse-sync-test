@@ -1,8 +1,8 @@
 #!/bin/sh
-# Start in the directory containing the `vse-sync-test` and `vse-sync-testsuite` repositories.
+# Start in the directory containing the `vse-sync-test` and `vse-sync-collection-tools` repositories.
 set -e
 # defaults
-DURATION=1000
+DURATION=1500s
 
 usage() {
 	read -d '' usage_prompt <<- EOF
@@ -53,7 +53,7 @@ check_vars() {
     fi
 
     TESTROOT=$(pwd)
-    COLLECTORPATH=$TESTROOT/vse-sync-testsuite
+    COLLECTORPATH=$TESTROOT/vse-sync-collection-tools
     ANALYSERPATH=$TESTROOT/vse-sync-test
     PPPATH=$ANALYSERPATH/vse-sync-pp/src
     DATADIR=$TESTROOT/data # TODO add timestamp suffix
@@ -62,30 +62,25 @@ check_vars() {
 }
 
 collect_data() {
-    echo "Collecting $DURATION seconds of data. Please wait..."
+    echo "Collecting $DURATION of data. Please wait..."
     cd $COLLECTORPATH
-    collection_ouput=$(go run main.go collect --interface="${INTERFACE_NAME}" --kubeconfig="${LOCAL_KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --count=${DURATION})
-    # log_output=$(go run hack/grab_logs.go -k="${LOCAL_KUBECONFIG}" -o="${DATADIR}" --since="${DURATION}s")
-    log_output=$(go run main.go logs -k="${LOCAL_KUBECONFIG}" -o="${DATADIR}" --since="${DURATION}s")
+    collection_ouput=$(go run main.go collect --interface="${INTERFACE_NAME}" --kubeconfig="${LOCAL_KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --duration=${DURATION})
+    log_output=$(go run main.go logs -k="${LOCAL_KUBECONFIG}" -o="${DATADIR}" --since="${DURATION}")
 }
 
 analyse_data() {
     cd $ANALYSERPATH/tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/
     dpll_test_result=$(PYTHONPATH=$PPPATH python3 ./testimpl.py $DATADIR/linuxptp-daemon-container-*) # TODO: don't use a wildcard. This breaks if there is more than one file in the directory.
+    # echo "${dpll_test_result}"
 
     cd $ANALYSERPATH
     CONFIGPATH=$ANALYSERPATH/tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/config.yaml
     gnss_test_result=$(PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux ${DATADIR}/collected.log gnss/time-error | PYTHONPATH=$PPPATH python3 -m vse_sync_pp.analyze --canonical --config=$CONFIGPATH - gnss/time-error)
-    
-    read -d '' results <<- EOF
-	Results:
+    # echo "${gnss_test_result}"
 
-    DPLL-to-PHC/PRTC-A: $dpll_test_result
-    gnss/time-error: $gnss_test_result
-
-	EOF
-
-    echo -e "$results"
+    echo "Results:"
+	echo "DPLL-to-PHC/PRTC-A: $dpll_test_result"
+    echo "gnss/time-error: $gnss_test_result"
 }
 
 # Parge args beginning with -
