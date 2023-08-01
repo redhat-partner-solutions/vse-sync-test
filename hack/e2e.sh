@@ -1,5 +1,5 @@
 #!/bin/sh
-# Start in the directory containing the `vse-sync-test` and `vse-sync-testsuite` repositories.
+# Start in the directory containing the `vse-sync-test` and `vse-sync-collection-tools` repositories.
 set -e
 # defaults
 DURATION=1000
@@ -53,7 +53,7 @@ check_vars() {
     fi
 
     TESTROOT=$(pwd)
-    COLLECTORPATH=$TESTROOT/vse-sync-testsuite
+    COLLECTORPATH=$TESTROOT/vse-sync-collection-tools
     ANALYSERPATH=$TESTROOT/vse-sync-test
     PPPATH=$ANALYSERPATH/vse-sync-pp/src
     DATADIR=$TESTROOT/data # TODO add timestamp suffix
@@ -64,7 +64,7 @@ check_vars() {
 collect_data() {
     echo "Collecting $DURATION seconds of data. Please wait..."
     cd $COLLECTORPATH
-    collection_ouput=$(go run main.go collect --interface="${INTERFACE_NAME}" --kubeconfig="${LOCAL_KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --count=${DURATION})
+    collection_ouput=$(go run main.go collect --interface="${INTERFACE_NAME}" --kubeconfig="${LOCAL_KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --duration=${DURATION})
     # log_output=$(go run hack/grab_logs.go -k="${LOCAL_KUBECONFIG}" -o="${DATADIR}" --since="${DURATION}s")
     log_output=$(go run main.go logs -k="${LOCAL_KUBECONFIG}" -o="${DATADIR}" --since="${DURATION}s")
 }
