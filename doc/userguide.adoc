@@ -19,23 +19,25 @@ The collector tools require Go to be available:
 
 To get the tools for data collection you need to clone the repository:
 
-  git clone git@github.com:redhat-partner-solutions/vse-sync-testsuite.git
-  cd vse-sync-testsuite
+  git clone git@github.com:redhat-partner-solutions/vse-sync-collection-tools.git
+  cd vse-sync-collection-tools
 
 For convenience we will set up a few vars. The tool needs a `kubeconfig` with access to the `"openshift-ptp` namespace, the name of the PTP device, and a location to store output files.
 
   export KUBECONFIG=~/kubeconfig
-  export PTPDEVICE=$(oc --kubeconfig ${KUBECONFIG} exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ls /sys/class/gnss/gnss0/device/net/)
+  export COLLECTDEVICE=$(oc --kubeconfig ${KUBECONFIG} exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ls /sys/class/gnss/gnss0/device/net/)
   export DATADIR=~/testdata
   mkdir $DATADIR
 
 The collector tool includes a built-in tool that will allow you to perform some basic environment validations. These check the setup you have is one that is a valid test target, not that it is functioning correctly.
 
-  go run main.go env verify --interface="${PTPDEVICE}" --kubeconfig="${KUBECONFIG}"
+  go run main.go env verify --interface="${COLLECTDEVICE}" --kubeconfig="${KUBECONFIG}"
 
-The collector tool will, by default, collect everything it can. For more specific details see the command help (`go run main.go --help`). The example command here will collect `1000` data samples at the default rate (once per second).
+*Note that an Out-Of-Tree driver for the WPC card will result in an error of unknown driver version. This does not prevent the collection from being run.*
 
-  go run main.go collect --interface="${PTPDEVICE}" --kubeconfig="${KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --duration=1000s
+The collector tool will, by default, collect everything it can. For more specific details see the command help (`go run main.go --help`). The example command here will collect `1500` data samples at the default rate (once per second).
+
+  go run main.go collect --interface="${COLLECTDEVICE}" --kubeconfig="${KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --duration=1500s
 
 To collect one specific type of data use the `--collector` flag e.g. `--collector=DPLL`.
 
@@ -46,11 +48,11 @@ Note that there are occasional error messages related to GPS data missing. This 
 
 There is also a tool that will conveniently download logs of interest from the PTP operator and save them to a provided directory. You can do this yourself with `oc` if you prefer.
 
-  go run main.go logs -k="${KUBECONFIG}" -o ${DATADIR} --since=1000s
+  go run main.go logs -k="${KUBECONFIG}" -o ${DATADIR} --since=1500s
 
 These tools can be run as a single command that will collect for a duration and then retrieve all logs of interest from that duration (this example uses 1000 seconds):
 
-  go run main.go collect --interface="${PTPDEVICE}" --kubeconfig="${KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --duration=1000s  && go run main.go logs -k="${KUBECONFIG}" -o ${DATADIR} --since=1000s
+  go run main.go collect --interface="${COLLECTDEVICE}" --kubeconfig="${KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --duration=1500s  && go run main.go logs -k="${KUBECONFIG}" -o ${DATADIR} --since=1500s
 
 Once you have collected the data required for the test(s) you want to run you can being to analyse it.
 
@@ -100,6 +102,14 @@ Again make sure the `vse-sync-pp` module is on your `PYTHONPATH` then run the de
   PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux ${DATADIR}/collected.log gnss/time-error | PYTHONPATH=$PPPATH python3 -m vse_sync_pp.analyze --canonical --config=$TEST/config.yaml - gnss/time-error
 
 In the command above, `${DATADIR}/collected.log` is a file containing the output from the collector, the first `gnss/time-error` tells the demuxer tool which lines to process, and the final `gnss/time-error` means that the analyser will test that data. Each command has its own `help` if you want more details.
+
+
+== Test Drive
+
+* TODO: write this section and rewrite the results section* 
+  git clone git@github.com:redhat-partner-solutions/testdrive.git
+
+
 
 == Results
 
