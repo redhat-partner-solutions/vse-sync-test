@@ -55,8 +55,10 @@ check_vars() {
     TESTROOT=$(pwd)
     COLLECTORPATH=$TESTROOT/vse-sync-collection-tools
     ANALYSERPATH=$TESTROOT/vse-sync-test
-    PPPATH=$ANALYSERPATH/vse-sync-pp/src
     DATADIR=$TESTROOT/data # TODO add timestamp suffix
+
+    TDPATH=$TESTROOT/testdrive/src
+    PPPATH=$ANALYSERPATH/vse-sync-pp/src
 
     mkdir -p $DATADIR 
 }
@@ -81,6 +83,27 @@ analyse_data() {
     echo "Results:"
 	echo "DPLL-to-PHC/PRTC-A: $dpll_test_result"
     echo "gnss/time-error: $gnss_test_result"
+}
+
+analyse_data_junit() {
+    GNSS_DEMUXED_PATH=$DATADIR/gnss-terror.demuxed
+    PTP_DAEMON_LOGFILE=$(ls -tr1 $DATADIR/linuxptp-daemon-container-* | tail -n 1)
+
+    PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux  $DATADIR/collected.log 'gnss/time-error' > $GNSS_DEMUXED_PATH
+
+    DRIVE_TESTS_JSON="tests.json"
+    SPACER="    "
+
+    echo "[" > $DRIVE_TESTS_JSON
+    echo "${SPACER}[" >> $DRIVE_TESTS_JSON
+    echo "${SPACER} ${SPACER} \"${ANALYSERPATH}/tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py\", \"${PTP_DAEMON_LOGFILE}\"" >> $DRIVE_TESTS_JSON
+    echo "${SPACER}]," >> $DRIVE_TESTS_JSON 
+    echo "${SPACER}[" >> $DRIVE_TESTS_JSON
+    echo "${SPACER} ${SPACER} \"${ANALYSERPATH}/tests/sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-A/testimpl.py\", \"${GNSS_DEMUXED_PATH}\"" >> $DRIVE_TESTS_JSON
+    echo "${SPACER}]" >> $DRIVE_TESTS_JSON
+    echo "]" >> $DRIVE_TESTS_JSON
+
+    env PYTHONPATH=$TDPATH:$PPPATH python3 -m testdrive.run https://github.com/redhat-partner-solutions/testdrive/ $DRIVE_TESTS_JSON | env PYTHONPATH=$TDPATH python3 -m testdrive.junit --prettify "e2e" -
 }
 
 # Parge args beginning with -
@@ -114,4 +137,5 @@ while [[ $1 == -* ]]; do
 done
 check_vars
 collect_data
-analyse_data
+# analyse_data
+analyse_data_junit
