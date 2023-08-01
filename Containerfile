@@ -29,7 +29,9 @@ WORKDIR ${VSE_DIR}
 RUN mkdir -p -m 0600 ~/.ssh && \
     ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 
-RUN --mount=type=ssh git clone --depth=1 git@github.com:redhat-partner-solutions/vse-sync-test.git --branch=integrate
+RUN --mount=type=ssh git clone --depth=1 git@github.com:redhat-partner-solutions/testdrive.git
+
+RUN --mount=type=ssh git clone --depth=1 git@github.com:redhat-partner-solutions/vse-sync-test.git
 WORKDIR ${VSE_DIR}/vse-sync-test
 RUN --mount=type=ssh git submodule update --init --recursive
 
