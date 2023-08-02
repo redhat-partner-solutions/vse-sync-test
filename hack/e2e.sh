@@ -56,34 +56,29 @@ check_vars() {
     COLLECTORPATH=$TESTROOT/vse-sync-collection-tools
     ANALYSERPATH=$TESTROOT/vse-sync-test
     DATADIR=$TESTROOT/data # TODO add timestamp suffix
-
+    RESULTSDIR=$TESTROOT/junit
     TDPATH=$TESTROOT/testdrive/src
     PPPATH=$ANALYSERPATH/vse-sync-pp/src
 
     mkdir -p $DATADIR 
+    mkdir -p $RESULTSDIR
+}
+
+verify_env(){
+  echo "Verifying test env. Please wait..."
+  cd $COLLECTORPATH
+  dt=$(date --rfc-3339='seconds' -u)
+  junit_template=$(echo ".[] | {\"id\": .data[0], \"result\": .data[1], \"reason\": .data[2], \"analysis\": .data[3], \"timestamp\": \"${dt}\", "time": 0}")
+  go run main.go env verify --interface="${INTERFACE_NAME}" --kubeconfig="${LOCAL_KUBECONFIG}" --use-analyser-format | \
+    jq -s -c "${junit_template}" | \
+    PYTHONPATH=$TDPATH python3 -m testdrive.junit --prettify "env" - >  $RESULTSDIR/env.junit
 }
 
 collect_data() {
     echo "Collecting $DURATION of data. Please wait..."
     cd $COLLECTORPATH
-    collection_ouput=$(go run main.go collect --interface="${INTERFACE_NAME}" --kubeconfig="${LOCAL_KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --duration=${DURATION})
-    # log_output=$(go run hack/grab_logs.go -k="${LOCAL_KUBECONFIG}" -o="${DATADIR}" --since="${DURATION}s")
-    log_output=$(go run main.go logs -k="${LOCAL_KUBECONFIG}" -o="${DATADIR}" --since="${DURATION}s")
-}
-
-analyse_data() {
-    cd $ANALYSERPATH/tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/
-    dpll_test_result=$(PYTHONPATH=$PPPATH python3 ./testimpl.py $DATADIR/linuxptp-daemon-container-*) # TODO: don't use a wildcard. This breaks if there is more than one file in the directory.
-    # echo "${dpll_test_result}"
-
-    cd $ANALYSERPATH
-    CONFIGPATH=$ANALYSERPATH/tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/config.yaml
-    gnss_test_result=$(PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux ${DATADIR}/collected.log gnss/time-error | PYTHONPATH=$PPPATH python3 -m vse_sync_pp.analyze --canonical --config=$CONFIGPATH - gnss/time-error)
-    # echo "${gnss_test_result}"
-
-    echo "Results:"
-	echo "DPLL-to-PHC/PRTC-A: $dpll_test_result"
-    echo "gnss/time-error: $gnss_test_result"
+    go run main.go collect --interface="${INTERFACE_NAME}" --kubeconfig="${LOCAL_KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --duration=${DURATION}
+    go run main.go logs -k="${LOCAL_KUBECONFIG}" -o="${DATADIR}" --since="${DURATION}"
 }
 
 analyse_data_junit() {
@@ -104,7 +99,14 @@ analyse_data_junit() {
     echo "${SPACER}]" >> $DRIVE_TESTS_JSON
     echo "]" >> $DRIVE_TESTS_JSON
 
-    env PYTHONPATH=$TDPATH:$PPPATH python3 -m testdrive.run https://github.com/redhat-partner-solutions/testdrive/ $DRIVE_TESTS_JSON | env PYTHONPATH=$TDPATH python3 -m testdrive.junit --prettify "e2e" -
+    env PYTHONPATH=$TDPATH:$PPPATH python3 -m testdrive.run https://github.com/redhat-partner-solutions/vse-sync-test/ $DRIVE_TESTS_JSON | \
+      env PYTHONPATH=$TDPATH python3 -m testdrive.junit --prettify "tests" - >  $RESULTSDIR/tests.junit
+}
+
+merge_junit() {
+  cd $RESULTSDIR
+  junitparser merge * combined.junit
+  cat combined.junit
 }
 
 # Parge args beginning with -
@@ -136,7 +138,9 @@ while [[ $1 == -* ]]; do
       -*) echo "invalid option: $1" 1>&2; usage; exit 1;;
     esac
 done
+
 check_vars
+verify_env
 collect_data
-# analyse_data
 analyse_data_junit
+merge_junit
