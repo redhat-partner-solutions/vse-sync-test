@@ -16,8 +16,8 @@
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 
 # RUN rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
-RUN microdnf install -y git golang python3 python3-pip tar python3-yaml
-RUN pip3 install pandas
+RUN microdnf install -y git golang python3 python3-pip tar python3-yaml jq
+RUN pip3 install pandas junitparser
 
 ADD https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz /tmp
 RUN tar -C /usr/bin -xzf /tmp/openshift-client-linux.tar.gz 
