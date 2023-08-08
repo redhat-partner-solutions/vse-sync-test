@@ -12,10 +12,8 @@
 # `ssh-keygen -t ed25519`
 #
 
-
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 
-# RUN rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
 RUN microdnf install -y git golang python3 python3-pip tar python3-yaml jq
 RUN pip3 install pandas junitparser
 
@@ -41,4 +39,4 @@ WORKDIR ${VSE_DIR}/vse-sync-collection-tools
 RUN go build
 
 WORKDIR ${VSE_DIR}
-CMD ["./vse-sync-test/hack/e2e.sh", "-k", "/usr/vse/kubeconfig", "-d", "1500s"]
+CMD ["./vse-sync-test/hack/e2e.sh", "-k", "/usr/vse/kubeconfig", "-d", "2000s"]
