@@ -45,3 +45,29 @@ Initialize the required python submodules:
 
 See the link:doc/CONTRIBUTING.adoc[contribution guide] for detailed instructions on
 how to get started contributing to this repo.
+
+== Using the Container
+
+A container is available that contains all the tests, pre-configured to do a long duration test run. The only input needed is a kubeconfig for the cluster under test, which needs to be mounted into the container at /usr/vse/kubeconfig. You can run it using this command:
+
+  podman run -v ~/kubeconfig:/usr/vse/kubeconfig quay.io/redhat-partner-solutions/vse-sync-test:latest
+
+By default the asciidoc and junit results will be printed to stdout. If you want direct access to the test data and results you can mount a directory into the container at /usr/vse/data that will have the data and results saved to it:
+
+  podman run -v ~/kubeconfig:/usr/vse/kubeconfig -v /home/redhat/tmp/data:/usr/vse/data quay.io/redhat-partner-solutions/vse-sync-test:latest
+
+gives:
+
+  /home/redhat/tmp/data/
+  ├── collected.log
+  ├── dpll-terror.demuxed
+  ├── gnss-terror.demuxed
+  ├── linuxptp-daemon-container-230808T224217
+  └── results
+      ├── combined.junit
+      ├── env.adoc
+      ├── env.json
+      ├── env.junit
+      ├── test.adoc
+      ├── test.json
+      └── test.junit
