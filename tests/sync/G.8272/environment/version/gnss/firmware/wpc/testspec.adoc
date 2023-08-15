@@ -2,35 +2,35 @@ ifdef::env-github[]
 :important-caption: :heavy_exclamation_mark:
 endif::[]
 
-= G.8272 environment version gnss firmware wpc
+=== G.8272 environment version gnss firmware wpc
 
 To run the tests focused on the characterization of T-GM performance, it is needed to satisfy that the environment is ready at Hardware level and Software level. This test focuses on ensuring the WPC GNSS firmware version is valid to run the specific T-GM performance tests.
 
 IMPORTANT: It is critical to note that the results of this test are only for ensuring the validation of the test environment and the System Under Test (SUT).
 
-== Goal
+==== Goal
 
 Verify that the firmware version of the GNSS device is acceptable to trigger the performance characterization of the T-GM.
 
-== Scope
+==== Scope
 
 * Independent Validation of test Environment
 * T-GM clocks
 * GNSS device validation
 
 
-== Out of scope
+==== Out of scope
 
 * T-BC clocks
 * T-TSC clocks
 
 
-== Acceptance criteria
+==== Acceptance criteria
 
 1. GNSS firmware version is exactly the version specified in the test configuration file.
 
 
-== Test procedure
+==== Test procedure
 
 1. The procedure leverages specific collector tooling to gather `GNSS` Firmware version.
 2. Verify gathered data meets acceptance criteria.
