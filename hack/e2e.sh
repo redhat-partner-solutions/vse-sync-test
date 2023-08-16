@@ -168,7 +168,4 @@ analyse_data
 create_junit
 create_adoc
 
-cat ${ENVADOC}
-cat ${TESTADOC}
-
 cat ${FULLJUNIT}
