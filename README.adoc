@@ -4,11 +4,14 @@ This repository contains tests for Synchronization use cases.
 
 == Directory layout
 
-Each test case comprises a set of files contained in a subdirectory under the
-`tests` directory. Subdirectories may be nested to an arbitrary degree. A
-subdirectory containing one or more files hosts a test case. Any subdirectories
-under a test case are for files related to that test case (they do not contain
-new test cases: test cases do not nest).
+Each test case comprises a set of one or more files contained in a subdirectory
+tree under the `tests` directory. Any subdirectories under a directory which
+contains regular files are considered to be related to the same test case. (Test
+cases do not nest.)
+
+The parent subdirectories of a test case (directories under `tests` and above
+the test case) only provide directory structure; these directories may be
+nested to an arbitrary degree.
 
 == Test identifiers
 
@@ -20,6 +23,9 @@ Each test case also has a canonical identifier, which is an
 https://www.rfc-editor.org/info/rfc3986[absolute URI]. The canonical identifier
 is permanently associated with the test case procedure and expected behaviour as
 specified at the time the test case is first (publicly) published.
+
+*Once a canonical identifier has been published it must always refer to
+exactly the same test case procedure and expected behaviour.*
 
 All test cases are expected to share a common base URI (an
 https://www.rfc-editor.org/info/rfc3986[absolute URI]), with the canonical
@@ -43,21 +49,39 @@ Initialize the required python submodules:
 
 == Contributing to the repo
 
-See the link:doc/CONTRIBUTING.adoc[contribution guide] for detailed instructions on
-how to get started contributing to this repo.
+See the link:doc/CONTRIBUTING.adoc[contribution guide] for detailed instructions
+on how to get started contributing to this repo.
 
 == Using the Container
 
-A container is available that contains all the tests, pre-configured to do a long duration test run. The only input needed is a kubeconfig for the cluster under test, which needs to be mounted into the container at /usr/vse/kubeconfig. You can run it using this command:
+A container is available that contains all the tests; it is pre-configured to do
+a long duration test run. The only input needed is a kubeconfig for the cluster
+under test. This must be mounted into the container at `/usr/vse/kubeconfig`.
+You can run the container using this command:
 
-  podman run -v ~/kubeconfig:/usr/vse/kubeconfig quay.io/redhat-partner-solutions/vse-sync-test:latest
+[source,shell]
+----
+podman run \
+  -v ~/kubeconfig:/usr/vse/kubeconfig \
+  quay.io/redhat-partner-solutions/vse-sync-test:latest
+----
 
-By default the asciidoc and junit results will be printed to stdout. If you want direct access to the test data and results you can mount a directory into the container at /usr/vse/data that will have the data and results saved to it:
+Test results will be printed as https://en.wikipedia.org/wiki/JUnit[JUnit] to
+stdout. You can also access the test data and results by mounting a directory
+into the container at `/usr/vse/data`. For example:
 
-  podman run -v ~/kubeconfig:/usr/vse/kubeconfig -v /home/redhat/tmp/data:/usr/vse/data quay.io/redhat-partner-solutions/vse-sync-test:latest
+[source,shell]
+----
+podman run \
+  -v ~/kubeconfig:/usr/vse/kubeconfig \
+  -v /home/redhat/tmp/data:/usr/vse/data \
+  quay.io/redhat-partner-solutions/vse-sync-test:latest
+----
 
 gives:
 
+[source,shell]
+----
   /home/redhat/tmp/data/
   ├── collected.log
   ├── dpll-terror.demuxed
@@ -71,3 +95,4 @@ gives:
       ├── test.adoc
       ├── test.json
       └── test.junit
+----
