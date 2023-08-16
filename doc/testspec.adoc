@@ -2,9 +2,11 @@ ifdef::env-github[]
 :important-caption: :heavy_exclamation_mark:
 endif::[]
 
-= add relative subdirs separated by a white space under `tests/sync` containing new test spec
+TODO: replace the text below with your test title
 
-add-main-focus-of-the-test
+= test title
+
+TODO: define the purpose and focus of the test
 
 IMPORTANT: It is critical to note that the results of this test are only valid
 when both the test environment and the System Under Test (SUT) have been
@@ -13,29 +15,31 @@ defined here, it is noted that they include timestamping accuracy.
 
 == Goal
 
-add-the-goal-of-your-new-test
+TODO: specify the test goal
 
 == Scope
 
-* In-scope test item 1
-* In-scope the test item 2
-* Add more scope as needed
+* TODO: state the scope of your test
+* TODO: state the scope of your test
+* TODO: state the scope of your test
 
 == Out of scope
 
 * Independent validation of the test environment
 * Independent validation of the SUT
 * Provision SUT
-* Add more out-of-scope items as needed
+* TODO: state what is out of scope for your test
+* TODO: state what is out of scope for your test
+* TODO: state what is out of scope for your test
 
 == Acceptance criteria
 
-1. Acceptance criteria item 1
-2. Acceptance criteria item 2
-3. Add more acceptance criteria items as needed
+. TODO: define acceptance criteria
+. TODO: define acceptance criteria
+. TODO: define acceptance criteria
 
 == Test procedure
 
-1. Step 1
-2. Step 2
-3. Add more steps as needed
+. TODO: define test steps
+. TODO: define test steps
+. TODO: define test steps

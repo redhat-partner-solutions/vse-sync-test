@@ -1,8 +1,18 @@
 = Contributing
 
-You can contribute to the repo in two main ways, as a test definer specifying a new test; and as a test developer implementing a new test. Thus, in terms of a "good PR" there are two options:
+You can contribute new test content in two main ways:
 
-1. A PR providing test specifications only.
-2. A PR providing test specifications and reference implementation.
+. As a test definer *specifying a test*
+. As a test developer *implementing a test*
 
-See link:./DEFINERS.adoc[Test definers guide] for information on how to add a new test specification and link:./DEVS.adoc[Test developers guide] for information on how to add a reference implementation for an existing test specification.
+Thus, in terms of a "good PR" there are the following options:
+
+. A PR providing *test specifications* with *reference implementations*
+. A PR providing *test specifications only*
+. A PR providing *reference implementations* (for existing test specifications)
+
+For guidance on contributing a test specification see
+link:./CONTRIBUTING_TESTSPEC.adoc[this guide].
+
+For guidance on contributing a reference implementation see
+link:./CONTRIBUTING_REFIMPL.adoc[this guide].
