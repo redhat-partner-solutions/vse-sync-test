@@ -71,7 +71,7 @@ link:./CONTRIBUTING_TESTSPEC.adoc#publish-test-spec[Publishing a test specificat
 A reference implememtation is considered (publicly) published when the
 following conditions become true for the first time:
 
-* The corresponding test specification is published
+* The corresponding test specification is published (see link:./CONTRIBUTING_TESTSPEC.adoc#publish-test-spec[Publishing a test specification])
 * The reference implementation is on the `main` branch of this repository
 
 == Changing a reference implementation
