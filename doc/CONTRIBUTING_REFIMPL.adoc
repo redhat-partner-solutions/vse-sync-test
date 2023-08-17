@@ -1,0 +1,148 @@
+= Contributing Reference Implementations
+
+This documents covers contributing a reference implementation for a test case.
+
+(Skip to the end to for <<an-example>>.)
+
+== Writing a reference implementation
+
+The exact content of a reference implementation is specific to the test case.
+Existing reference implementations are a source of inspiration.
+
+Each reference implementation must be in the same directory as the test
+specification (`testspec.adoc`). It is ok for the reference implementation to
+be a symbolic link to a shared implementation in a different directory.
+
+For example:
+
+* https://github.com/redhat-partner-solutions/vse-sync-test/blob/main/tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py[reference implementation], a symbolic link
+* https://github.com/redhat-partner-solutions/vse-sync-test/blob/main/tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/testimpl.py[shared Python implementation], the target of the symbolic link
+
+Reference implementations must:
+
+* Be appropriately documented
+* Be runnable from a shell/the command line
+* Take test input parameters from an associated configuration file
+  (see <<test-input-params>>)
+* Print results as a line of JSON-encoded text to stdout
+  (see <<test-output>>)
+* Exit with code zero if a result was produced, non-zero otherwise
+
+[[test-input-params]]
+== Test input parameters
+
+Test input parameters must be specified in an associated configuration file
+named `config.yaml`. This file must be supplied in the same directory as the
+reference implementation.
+
+An example of a reference implementation with its configuration file:
+
+* https://github.com/redhat-partner-solutions/vse-sync-test/blob/main/tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py[reference implementation]
+* https://github.com/redhat-partner-solutions/vse-sync-test/blob/main/tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/config.yaml[configuration file]
+
+[[test-output]]
+== Test output
+
+A reference implementation must print its results as a line of JSON-encoded text.
+The JSON value must be a JSON object:
+
+* including a pair at key "result" with a value of:
+** JSON `true` on test success; or,
+** JSON `false` on test failure
+* including a pair at key "reason" with a value of:
+** a JSON string, providing any qualification of the result; or,
+** JSON `null`
+* optionally including a pair at key "analysis" with a value of:
+** a JSON object, providing any relevant structured summarization of the result
+
+All other key/value pairs are reserved for future use.
+
+== Manage dependencies
+
+git submodules are used to manage the dependencies this repository has on other
+repositories. Before raising a PR, ensure you have tested with the submodule
+versions on this repository's `main` branch.
+
+To pull the latest changes present in dependent submodules:
+
+[source,console]
+$ git submodule update --init --recursive
+
+== Publishing a reference implementation
+
+A reference implememtation is considered (publicly) published when the
+following conditions become true for the first time:
+
+* The corresponding test specification is published
+  (see link:./CONTRIBUTING_TESTSPEC.adoc#publish-test-spec[Publishing a test specification])
+* The reference implementation is on the `main` branch of this repository
+
+== Changing a reference implementation
+
+Once published, a reference implementation is closed to modification.
+
+(Conceptually, a published reference implementation can be "changed" by
+providing a new version of it with a new version of the test specification.
+How new versions of a test are to be handled is not yet defined.)
+
+Changes to _unpublished_ reference implementations can be accepted.
+
+== Submitting a PR
+
+In addition to common good PR hygiene practices, a PR containing reference
+implementations must satisfy the following:
+
+* The PR must provide sufficient context for it to be reviewed as a single unit
+* The PR must contain a coherent set of new and changed test cases
+* No changes to published tests
+* Each reference implementation must be in the same directory as the test
+  specification (`testspec.adoc`) for the test case
+* Each reference implementation must have an associated configuration file
+  `config.yaml` in the same directory defining test input parameters
+* Each reference implementation must provide example data files demonstrating
+  test success
+* Each reference implementation must provide example data files demonstrating
+  test failure
+
+Each reference implementation should ideally follow consistent practices with
+existing similar reference implementations (by language, type of test, ...)
+
+[[an-example]]
+== An example reference implementation
+
+The example demonstrated here is this
+https://github.com/redhat-partner-solutions/vse-sync-test/blob/main/tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A/testimpl.py[reference implementation]
+(which is actually a symbolic link to this
+https://github.com/redhat-partner-solutions/vse-sync-test/blob/main/tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/testimpl.py[shared Python implementation]).
+
+This reference implementation takes lines of JSON data as input. This is an
+example of data produced by a collector such as
+https://github.com/redhat-partner-solutions/vse-sync-collection-tools[vse-sync-collection-tools].
+Alternatively your reference implementation could use system log files, for
+example those produced by `linux-ptp-daemon`.
+
+(In all cases, it is the reference implementation's responsibility to ensure it
+parses and handles its input data correctly.)
+
+Example log files for test success and failure are provided alongside the test
+cases:
+
+* https://github.com/redhat-partner-solutions/vse-sync-test/blob/main/tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/examples/dpll-PRTCA-accept.dat[test success for PRTC-A only]
+* https://github.com/redhat-partner-solutions/vse-sync-test/blob/main/tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/examples/dpll-reject.dat[test failure]
+
+The following demonstrates test success with this reference implementation:
+
+[source,console]
+$ cd tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A
+$ PPATH=../../../../../../vse-sync-pp/src
+$ PYTHONPATH=$PPATH python3 testimpl.py  ../examples/dpll-PRTCA-accept.dat
+{"result": true, "reason": null, "analysis": {"duration": 2458.27, "terror": {"units": "ns", "min": -5.14, "max": 5.58, "range": 10.72, "mean": -0.001, "stddev": 2.453, "variance": 6.016}}}
+
+The following demonstrates test failure with the same reference implementation
+but different data:
+
+[source,console]
+$ cd tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A
+$ PPATH=../../../../../../vse-sync-pp/src
+$ PYTHONPATH=$PPATH python3 testimpl.py  ../examples/dpll-reject.dat
+{"result": false, "reason": "short test duration", "analysis": {"duration": 475.7922967, "terror": {"units": "ns", "min": -3.49, "max": 5.84, "range": 9.33, "mean": 0.03, "stddev": 2.342, "variance": 5.486}}}

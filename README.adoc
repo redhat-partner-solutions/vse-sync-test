@@ -2,17 +2,20 @@
 
 This repository contains tests for Synchronization use cases.
 
+[[dir-layout,Directory layout]]
 == Directory layout
 
-Each test case comprises a set of one or more files contained in a subdirectory
-tree under the `tests` directory. Any subdirectories under a directory which
-contains regular files are considered to be related to the same test case. (Test
-cases do not nest.)
+Each test case is contained in a subdirectory tree under the `tests` directory.
+A test case is identified by a directory containing a `testspec.adoc` file (its
+test specification). Any subdirectories of this directory are considered to hold
+files related to the same test case. (Test case directories do not nest.)
 
 The parent subdirectories of a test case (directories under `tests` and above
-the test case) only provide directory structure; these directories may be
-nested to an arbitrary degree.
+the test case) provide directory structure; these directories may be nested to
+an arbitrary degree. They may contain other files (naturally excluding files
+named `testspec.adoc`).
 
+[[test-ids,Test identifiers]]
 == Test identifiers
 
 The relative directory path of a test case under `tests` is a locally unique

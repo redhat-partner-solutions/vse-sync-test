@@ -1,0 +1,75 @@
+= Contributing Test Specifications
+
+This document covers contributing a test specification for a test case.
+
+== Allocate a unique test identifier
+
+To allocate a unique test identifier for your new test specification, simply
+create a new directory in the directory tree under `tests` and put your test
+specification in that directory.
+(See link:../README.adoc#dir-layout[Directory layout].)
+
+Your test specification must be in a file named `testspec.adoc`. The relative
+directory path under `tests` to the directory containing this file forms a
+locally unique identifier for your test
+(as per link:../README.adoc#test-ids[Test identifiers]).
+
+For instance, the test specification for the calculation of the time accuracy in
+link:../tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A/testspec.adoc[Telecom GrandMaster clock supporting Class A timing requirements]
+is found at this relative directory path:
+
+    sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A
+
+If this relative directory path is resolved against common base URI:
+
+    https://github.com/redhat-partner-solutions/vse-sync-test/tests/
+
+then this test would have an absolute URI of:
+
+    https://github.com/redhat-partner-solutions/vse-sync-test/tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A/
+
+== Writing a test specification
+
+The exact content of a test specification is specific to the test case.
+A link:./testspec.adoc[starter document] is provided;
+a new test specification can be tailored from this.
+
+[[publish-test-spec,Publishing a test specification]]
+== Publishing a test specification
+
+A test specification is considered (publicly) published when the following
+conditions become true for the first time:
+
+* Its `testspec.adoc` file is on the `main` branch of this repository
+* The repository itself is publicly available
+* A common base URI has been declared
+
+Once published, a test specification is closed to modification.
+
+(Rationale: a test report associates each test result with a test case using the
+canonical identifier for the test case. Once the test specification is publicly
+available and has a canonical identifier associated, that identifier must always
+refer to exactly the same test procedure and expected behaviour. This is
+independent of whether test reports are public or private.)
+
+== Changing a test specification
+
+Once published, a test specification is closed to modification.
+
+(Conceptually, a published test specification can be "changed" by providing a
+new version of the test specification. How new versions of a test are to be
+handled is not yet defined.)
+
+Changes to _unpublished_ test specifications can be accepted.
+
+== Submitting a PR
+
+In addition to common good PR hygiene practices, a PR containing test
+specifications must satisfy the following:
+
+* The PR must provide sufficient context for it to be reviewed as a single unit
+* The PR must contain a coherent set of new and changed test cases
+* No changes to published tests
+* Each test case must have an unique local identifier
+* Each test case must respect link:../README.adoc#dir-layout[Directory layout]
+* Each test case must have a test specification document called `testspec.adoc`
