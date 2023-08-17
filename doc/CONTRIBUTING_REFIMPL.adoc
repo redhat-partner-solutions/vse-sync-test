@@ -7,10 +7,16 @@ This documents covers contributing a reference implementation for a test case.
 == Writing a reference implementation
 
 The exact content of a reference implementation is specific to the test case.
+Existing reference implementations are a source of inspiration.
 
-Existing reference implementations are a source of inspiration, for example:
+Each reference implementation must be in the same directory as the test
+specification (`testspec.adoc`). It is ok for the reference implementation to
+be a symbolic link to a shared implementation in a different directory.
 
-* https://github.com/redhat-partner-solutions/vse-sync-test/blob/main/tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py[Python]
+For example:
+
+* https://github.com/redhat-partner-solutions/vse-sync-test/blob/main/tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py[reference implementation], a symbolic link
+* https://github.com/redhat-partner-solutions/vse-sync-test/blob/main/tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/testimpl.py[shared Python implementation], the target of the symbolic link
 
 Reference implementations must:
 
@@ -31,8 +37,8 @@ reference implementation.
 
 An example of a reference implementation with its configuration file:
 
-* https://github.com/redhat-partner-solutions/vse-sync-test/blob/main/tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py[testimpl.py]
-* https://github.com/redhat-partner-solutions/vse-sync-test/blob/main/tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/config.yaml[config.yaml]
+* https://github.com/redhat-partner-solutions/vse-sync-test/blob/main/tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py[reference implementation]
+* https://github.com/redhat-partner-solutions/vse-sync-test/blob/main/tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/config.yaml[configuration file]
 
 [[test-output]]
 == Test output
@@ -64,14 +70,11 @@ $ git submodule update --init --recursive
 
 == Publishing a reference implementation
 
-(See the base argument in 
-link:./CONTRIBUTING_TESTSPEC.adoc#publish-test-spec[Publishing a test specification]
-.)
-
 A reference implememtation is considered (publicly) published when the
 following conditions become true for the first time:
 
-* The corresponding test specification is published (see link:./CONTRIBUTING_TESTSPEC.adoc#publish-test-spec[Publishing a test specification])
+* The corresponding test specification is published
+  (see link:./CONTRIBUTING_TESTSPEC.adoc#publish-test-spec[Publishing a test specification])
 * The reference implementation is on the `main` branch of this repository
 
 == Changing a reference implementation
@@ -107,8 +110,10 @@ existing similar reference implementations (by language, type of test, ...)
 [[an-example]]
 == An example reference implementation
 
-The following is a reference implementation of a test case in
-https://github.com/redhat-partner-solutions/vse-sync-test/blob/main/tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A/testimpl.py[Python].
+The example demonstrated here is this
+https://github.com/redhat-partner-solutions/vse-sync-test/blob/main/tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A/testimpl.py[reference implementation]
+(which is actually a symbolic link to this
+https://github.com/redhat-partner-solutions/vse-sync-test/blob/main/tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/testimpl.py[shared Python implementation]).
 
 This reference implementation takes lines of JSON data as input. This is an
 example of data produced by a collector such as
