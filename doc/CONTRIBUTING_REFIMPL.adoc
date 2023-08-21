@@ -47,8 +47,9 @@ A reference implementation must print its results as a line of JSON-encoded text
 The JSON value must be a JSON object:
 
 * including a pair at key "result" with a value of:
-** JSON `true` on test success; or,
-** JSON `false` on test failure
+** JSON `true` on test success;
+** JSON `false` on test failure; or,
+** JSON string "error" indicating failure to produce a result
 * including a pair at key "reason" with a value of:
 ** a JSON string, providing any qualification of the result; or,
 ** JSON `null`
