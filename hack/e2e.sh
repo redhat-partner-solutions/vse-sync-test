@@ -1,27 +1,48 @@
 #!/bin/sh
 # Start in the directory containing the `vse-sync-test` and `vse-sync-collection-tools` repositories.
+
 set -e
+set -o pipefail
+
 # defaults
 DURATION=2000s
 
 usage() {
-	read -d '' usage_prompt <<- EOF
-	Usage: $0 -k KUBECONFIG [-i INTERFACE_NAME] [-d DURATION]
+    cat - <<EOF
+Usage: $(basename "$0") -k KUBECONFIG [-i INTERFACE_NAME] [-d DURATION]
 
-    Options (required):
-        -k: Path to the kubeconfig to be used
+Options (required):
+    -k: path to the kubeconfig to be used
 
-    Options (optional):
-        -i: name of the interface to gather data about
-        -d: How many seconds to run data collection.
-    
-    Example Usage:
-        $0 -k ~/kubeconfig
+Options (optional):
+    -i: name of the interface to gather data about
+    -d: how many seconds to run data collection
 
-	EOF
-
-	echo -e "$usage_prompt"
+Example Usage:
+    $(basename "$0") -k ~/kubeconfig
+EOF
 }
+
+# TODO: shouldn't KUBECONFIG be an argument if it's required?
+# TODO: replace the checks in check_vars with something like this?
+# and now I've reached the bottom of the file I see something similar
+#
+#INTERFACE_NAME=""
+#DURATION=""
+#
+#while getopts ':i:d:' option; do
+#    case "$option" in
+#        i) INTERFACE_NAME="$OPTARG" ;;
+#        d) DURATION="$OPTARG" ;;
+#        \?) usage >&2 && exit 2 ;;
+#        :) usage >&2 && exit 2 ;;
+#    esac
+#done
+#shift $((OPTIND - 1))
+#
+#[ $# -ne 1 ] && usage >&2 && exit 2
+#
+#KUBECONFIG="$1"
 
 check_vars() {
     local required_vars=('LOCAL_KUBECONFIG')
@@ -73,6 +94,13 @@ check_vars() {
     ENVJUNIT="${RESULTSDIR}/env.junit"
     TESTJUNIT="${RESULTSDIR}/test.junit"
     FULLJUNIT="${RESULTSDIR}/combined.junit"
+
+    pushd "$ANALYSERPATH" >/dev/null 2>&1
+    COMMIT="$(git show -s --format=%H HEAD)"
+    popd >/dev/null 2>&1
+
+    BASEURL_IDS=https://docs.engineering.redhat.com/vse-sync-test/
+    BASEURL_SPECS=https://github.com/redhat-partner-solutions/vse-sync-test/blob/${COMMIT}/
 }
 
 verify_env(){
@@ -101,27 +129,26 @@ analyse_data() {
     PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux  $DATADIR/collected.log 'dpll/time-error' >> $DPLL_DEMUXED_PATH
 
     cd ${ANALYSERPATH}
-    DRIVE_TESTS_JSON="tests.json"
-    SPACER="    "
-    echo "[" > $DRIVE_TESTS_JSON
-    echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py\", \"${PTP_DAEMON_LOGFILE}\"]," >> $DRIVE_TESTS_JSON
-    echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py\", \"${PTP_DAEMON_LOGFILE}\"]," >> $DRIVE_TESTS_JSON
-    echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/PHC-to-SYS/RAN/testimpl.py\", \"${PTP_DAEMON_LOGFILE}\"]," >> $DRIVE_TESTS_JSON
-    echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-A/testimpl.py\", \"${GNSS_DEMUXED_PATH}\"]," >> $DRIVE_TESTS_JSON
-    echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-B/testimpl.py\", \"${GNSS_DEMUXED_PATH}\"]," >> $DRIVE_TESTS_JSON
-    echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A/testimpl.py\", \"${DPLL_DEMUXED_PATH}\"]," >> $DRIVE_TESTS_JSON
-    # Remember to fixup trailing commas if you amend this!
-    echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-B/testimpl.py\", \"${DPLL_DEMUXED_PATH}\"]" >> $DRIVE_TESTS_JSON
-    echo "]" >> $DRIVE_TESTS_JSON
 
-    BRANCHNAME=$(git branch --show-current)
-
-    env PYTHONPATH=$TDPATH:$PPPATH python3 -m testdrive.run https://github.com/redhat-partner-solutions/vse-sync-test/tree/${BRANCHNAME} $DRIVE_TESTS_JSON >> ${TESTJSON}
+    env PYTHONPATH=$TDPATH:$PPPATH python3 -m testdrive.run "$BASEURL_IDS" - <<EOF
+["tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "${PTP_DAEMON_LOGFILE}"]
+["tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "${PTP_DAEMON_LOGFILE}"]
+["tests/sync/G.8272/time-error-in-locked-mode/PHC-to-SYS/RAN/testimpl.py", "${PTP_DAEMON_LOGFILE}"]
+["tests/sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-A/testimpl.py", "${GNSS_DEMUXED_PATH}"]
+["tests/sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-B/testimpl.py", "${GNSS_DEMUXED_PATH}"]
+["tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A/testimpl.py", "${DPLL_DEMUXED_PATH}"]
+["tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-B/testimpl.py", "${DPLL_DEMUXED_PATH}"]
+EOF
 }
 
 create_junit() {
-  cat ${ENVJSON} | env PYTHONPATH=$TDPATH python3 -m testdrive.junit --prettify "Environment" - >  ${ENVJUNIT}
-  cat ${TESTJSON} | env PYTHONPATH=$TDPATH python3 -m testdrive.junit --prettify "T-GM Tests" - >  ${TESTJUNIT}
+  cat ${ENVJSON} | \
+        env PYTHONPATH=$TDPATH python3 -m testdrive.junit --baseurl-ids="$BASEURL_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "Environment" - \
+        > ${ENVJUNIT}
+
+  cat ${TESTJSON} | \
+        env PYTHONPATH=$TDPATH python3 -m testdrive.junit --baseurl-ids="$BASEURL_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "T-GM Tests" - \
+        > ${TESTJUNIT}
 
   junitparser merge ${RESULTSDIR}/*.junit ${FULLJUNIT}
 }
@@ -164,7 +191,7 @@ done
 check_vars
 verify_env
 collect_data
-analyse_data
+analyse_data >"$TESTJSON"
 create_junit
 create_adoc
 
