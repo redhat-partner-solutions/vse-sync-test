@@ -23,26 +23,35 @@ Example Usage:
 EOF
 }
 
-# TODO: shouldn't KUBECONFIG be an argument if it's required?
-# TODO: replace the checks in check_vars with something like this?
-# and now I've reached the bottom of the file I see something similar
-#
-#INTERFACE_NAME=""
-#DURATION=""
-#
-#while getopts ':i:d:' option; do
-#    case "$option" in
-#        i) INTERFACE_NAME="$OPTARG" ;;
-#        d) DURATION="$OPTARG" ;;
-#        \?) usage >&2 && exit 2 ;;
-#        :) usage >&2 && exit 2 ;;
-#    esac
-#done
-#shift $((OPTIND - 1))
-#
-#[ $# -ne 1 ] && usage >&2 && exit 2
-#
-#KUBECONFIG="$1"
+# Parge args beginning with -
+while [[ $1 == -* ]]; do
+    case "$1" in
+      -h|--help|-\?) usage; exit 0;;
+      -k) if (($# > 1)); then
+            export LOCAL_KUBECONFIG=$2; shift 2
+          else
+            echo "-k requires an argument" 1>&2
+            usage
+            exit 1
+          fi ;;
+      -i) if (($# > 1)); then
+            export INTERFACE_NAME=$2; shift 2
+          else
+            echo "-i requires an argument" 1>&2
+            usage
+            exit 1
+          fi ;;
+      -d) if (($# > 1)); then
+            export DURATION=$2; shift 2
+          else
+            echo "-d requires an argument" 1>&2
+            usage
+            exit 1
+          fi ;;		  
+      --) shift; break;;
+      -*) echo "invalid option: $1" 1>&2; usage; exit 1;;
+    esac
+done
 
 check_vars() {
     local required_vars=('LOCAL_KUBECONFIG')
@@ -79,58 +88,86 @@ check_vars() {
     TDPATH=$TESTROOT/testdrive/src
     PPPATH=$ANALYSERPATH/vse-sync-pp/src
 
-    DATADIR=$TESTROOT/data
-    RESULTSDIR=$DATADIR/results
+    OUTPUTDIR=$TESTROOT/data
+    DATADIR=$OUTPUTDIR/collected # Raw collected data/logs
+    ARTEFACTDIR=$OUTPUTDIR/artefacts # place mid pipeline files here
+    PLOTDIR=$OUTPUTDIR/plots
 
-    mkdir -p $DATADIR 
-    mkdir -p $RESULTSDIR
+    mkdir -p $DATADIR
+    mkdir -p $ARTEFACTDIR
+    mkdir -p $PLOTDIR
 
-    ENVJSON="${RESULTSDIR}/env.json"
-    TESTJSON="${RESULTSDIR}/test.json"
+    GNSS_DEMUXED_PATH=$ARTEFACTDIR/gnss-terror.demuxed
+    DPLL_DEMUXED_PATH=$ARTEFACTDIR/dpll-terror.demuxed
 
-    ENVADOC="${RESULTSDIR}/env.adoc"
-    TESTADOC="${RESULTSDIR}/test.adoc"
+    ENVJSON="${ARTEFACTDIR}/env.json"
+    TESTJSON="${ARTEFACTDIR}/test.json"
 
-    ENVJUNIT="${RESULTSDIR}/env.junit"
-    TESTJUNIT="${RESULTSDIR}/test.junit"
-    FULLJUNIT="${RESULTSDIR}/combined.junit"
+    ENVADOC="${ARTEFACTDIR}/env.adoc"
+    TESTADOC="${ARTEFACTDIR}/test.adoc"
+
+    ENVJUNIT="${ARTEFACTDIR}/env.junit"
+    TESTJUNIT="${ARTEFACTDIR}/test.junit"
+    FULLJUNIT="${OUTPUTDIR}/results.junit"
 
     pushd "$ANALYSERPATH" >/dev/null 2>&1
-    COMMIT="$(git show -s --format=%H HEAD)"
+    local commit="$(git show -s --format=%H HEAD)"
     popd >/dev/null 2>&1
 
-    BASEURL_IDS=https://docs.engineering.redhat.com/vse-sync-test/
+    BASEURL_ENV_IDS=https://github.com/redhat-partner-solutions/vse-sync-test/tree/main/
+    BASEURL_TEST_IDS=https://docs.engineering.redhat.com/vse-sync-test/
     BASEURL_SPECS=https://github.com/redhat-partner-solutions/vse-sync-test/blob/${COMMIT}/
 }
 
+audit_repo() {
+  pushd "$1" >/dev/null 2>&1
+  cat - << EOF
+  {
+    "path": "$1",
+    "commit": "$(git show -s --format=%H HEAD)",
+    "status": "$(git status --short)"
+    }
+EOF
+  popd >/dev/null 2>&1
+}
+
+audit_container() {
+  cat - << EOF
+{
+  "vse-sync-collection-tools": $(audit_repo $COLLECTORPATH),
+  "vse-sync-test": $(audit_repo $ANALYSERPATH),
+  "vse-sync-pp": $(audit_repo $PPPATH),
+  "testdrive": $(audit_repo $TDPATH),
+}'
+EOF
+}
+
 verify_env(){
+  pushd "$COLLECTORPATH" >/dev/null 2>&1
   echo "Verifying test env. Please wait..."
-  cd $COLLECTORPATH
   dt=$(date --rfc-3339='seconds' -u)
   junit_template=$(echo ".[].data + { \"timestamp\": \"${dt}\", "time": 0}")
   go run main.go env verify --interface="${INTERFACE_NAME}" --kubeconfig="${LOCAL_KUBECONFIG}" --use-analyser-format >> ${ENVJSON}.raw
   cat ${ENVJSON}.raw | jq -s -c "${junit_template}" >> ${ENVJSON}
+  popd >/dev/null 2>&1
 }
 
 collect_data() {
-    echo "Collecting $DURATION of data. Please wait..."
-    cd $COLLECTORPATH
-    go run main.go collect --interface="${INTERFACE_NAME}" --kubeconfig="${LOCAL_KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --duration=${DURATION}
-    go run main.go logs -k="${LOCAL_KUBECONFIG}" -o="${DATADIR}" --since="${DURATION}"
+  pushd "$COLLECTORPATH" >/dev/null 2>&1
+  echo "Collecting $DURATION of data. Please wait..."
+  go run main.go collect --interface="${INTERFACE_NAME}" --kubeconfig="${LOCAL_KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --duration=${DURATION}
+  go run main.go logs -k="${LOCAL_KUBECONFIG}" -o="${DATADIR}" --since="${DURATION}"
+  popd >/dev/null 2>&1
 }
 
 analyse_data() {
-    PTP_DAEMON_LOGFILE=$(ls -tr1 $DATADIR/linuxptp-daemon-container-* | tail -n 1)
+  pushd "$ANALYSERPATH" >/dev/null 2>&1
+  local PTP_DAEMON_LOGFILE=$(ls -tr1 $DATADIR/linuxptp-daemon-container-* | tail -n 1)
 
-    GNSS_DEMUXED_PATH=$DATADIR/gnss-terror.demuxed
-    DPLL_DEMUXED_PATH=$DATADIR/dpll-terror.demuxed
+  PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $DATADIR/collected.log 'gnss/time-error' >> $GNSS_DEMUXED_PATH
+  PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $DATADIR/collected.log 'dpll/time-error' >> $DPLL_DEMUXED_PATH
 
-    PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux  $DATADIR/collected.log 'gnss/time-error' >> $GNSS_DEMUXED_PATH
-    PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux  $DATADIR/collected.log 'dpll/time-error' >> $DPLL_DEMUXED_PATH
-
-    cd ${ANALYSERPATH}
-
-    env PYTHONPATH=$TDPATH:$PPPATH python3 -m testdrive.run "$BASEURL_IDS" - <<EOF
+  cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
 ["tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "${PTP_DAEMON_LOGFILE}"]
 ["tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "${PTP_DAEMON_LOGFILE}"]
 ["tests/sync/G.8272/time-error-in-locked-mode/PHC-to-SYS/RAN/testimpl.py", "${PTP_DAEMON_LOGFILE}"]
@@ -139,18 +176,25 @@ analyse_data() {
 ["tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A/testimpl.py", "${DPLL_DEMUXED_PATH}"]
 ["tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-B/testimpl.py", "${DPLL_DEMUXED_PATH}"]
 EOF
+  env PYTHONPATH=$TDPATH:$PPPATH python3 -m testdrive.run "$BASEURL_TEST_IDS" --basedir="$ANALYSERPATH" $ARTEFACTDIR/testdrive_config.json
+  popd >/dev/null 2>&1
 }
 
 create_junit() {
   cat ${ENVJSON} | \
-        env PYTHONPATH=$TDPATH python3 -m testdrive.junit --baseurl-ids="$BASEURL_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "Environment" - \
+        env PYTHONPATH=$TDPATH python3 -m testdrive.junit --baseurl-ids="$BASEURL_ENV_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "Environment" - \
         > ${ENVJUNIT}
 
   cat ${TESTJSON} | \
-        env PYTHONPATH=$TDPATH python3 -m testdrive.junit --baseurl-ids="$BASEURL_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "T-GM Tests" - \
+        env PYTHONPATH=$TDPATH python3 -m testdrive.junit --baseurl-ids="$BASEURL_TEST_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "T-GM Tests" - \
         > ${TESTJUNIT}
 
-  junitparser merge ${RESULTSDIR}/*.junit ${FULLJUNIT}
+  junitparser merge ${ARTEFACTDIR}/*.junit ${FULLJUNIT}
+}
+
+create_charts() {
+  env PYTHONPATH=$PPPATH python3 -m vse_sync_pp.plot -c $GNSS_DEMUXED_PATH gnss/time-error $PLOTDIR/gnss-terror.png
+  env PYTHONPATH=$PPPATH python3 -m vse_sync_pp.plot -c $DPLL_DEMUXED_PATH dpll/time-error $PLOTDIR/dpll-terror.png
 }
 
 create_adoc() {
@@ -158,41 +202,13 @@ create_adoc() {
   cat ${TESTJSON} | env PYTHONPATH=$TDPATH python3 -m testdrive.asciidoc "T-GM Tests" - >  ${TESTADOC}
 }
 
-# Parge args beginning with -
-while [[ $1 == -* ]]; do
-    case "$1" in
-      -h|--help|-\?) usage; exit 0;;
-      -k) if (($# > 1)); then
-            export LOCAL_KUBECONFIG=$2; shift 2
-          else
-            echo "-k requires an argument" 1>&2
-            usage
-            exit 1
-          fi ;;
-      -i) if (($# > 1)); then
-            export INTERFACE_NAME=$2; shift 2
-          else
-            echo "-i requires an argument" 1>&2
-            usage
-            exit 1
-          fi ;;
-      -d) if (($# > 1)); then
-            export DURATION=$2; shift 2
-          else
-            echo "-d requires an argument" 1>&2
-            usage
-            exit 1
-          fi ;;		  
-      --) shift; break;;
-      -*) echo "invalid option: $1" 1>&2; usage; exit 1;;
-    esac
-done
-
 check_vars
+audit_container > $DATADIR/repo_audit
 verify_env
 collect_data
 analyse_data >"$TESTJSON"
 create_junit
+create_charts
 create_adoc
 
 cat ${FULLJUNIT}
