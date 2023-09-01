@@ -76,7 +76,7 @@ check_vars() {
 	fi
 
     if [[ -z $INTERFACE_NAME ]]; then
-        INTERFACE_NAME=$(oc -n openshift-ptp --kubeconfig=${LOCAL_KUBECONFIG} exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ls /sys/class/gnss/gnss0/device/net/)
+        INTERFACE_NAME=$(oc -n openshift-ptp --kubeconfig=$LOCAL_KUBECONFIG exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ls /sys/class/gnss/gnss0/device/net/)
         echo "Discovered interface name: $INTERFACE_NAME"
     else    
         echo "Using interface name: $INTERFACE_NAME"
@@ -100,15 +100,16 @@ check_vars() {
     GNSS_DEMUXED_PATH=$ARTEFACTDIR/gnss-terror.demuxed
     DPLL_DEMUXED_PATH=$ARTEFACTDIR/dpll-terror.demuxed
 
-    ENVJSON="${ARTEFACTDIR}/env.json"
-    TESTJSON="${ARTEFACTDIR}/test.json"
+    ENVJSONRAW="$ARTEFACTDIR/env.json.raw"
+    ENVJSON="$DATADIR/env.json"
+    TESTJSON="$ARTEFACTDIR/test.json"
 
-    ENVADOC="${ARTEFACTDIR}/env.adoc"
-    TESTADOC="${ARTEFACTDIR}/test.adoc"
+    ENVADOC="$ARTEFACTDIR/env.adoc"
+    TESTADOC="$ARTEFACTDIR/test.adoc"
 
-    ENVJUNIT="${ARTEFACTDIR}/env.junit"
-    TESTJUNIT="${ARTEFACTDIR}/test.junit"
-    FULLJUNIT="${OUTPUTDIR}/results.junit"
+    ENVJUNIT="$ARTEFACTDIR/env.junit"
+    TESTJUNIT="$ARTEFACTDIR/test.junit"
+    FULLJUNIT="$OUTPUTDIR/sync_test_report.xml"
 
     pushd "$ANALYSERPATH" >/dev/null 2>&1
     local commit="$(git show -s --format=%H HEAD)"
@@ -146,17 +147,17 @@ verify_env(){
   pushd "$COLLECTORPATH" >/dev/null 2>&1
   echo "Verifying test env. Please wait..."
   dt=$(date --rfc-3339='seconds' -u)
-  junit_template=$(echo ".[].data + { \"timestamp\": \"${dt}\", "time": 0}")
-  go run main.go env verify --interface="${INTERFACE_NAME}" --kubeconfig="${LOCAL_KUBECONFIG}" --use-analyser-format >> ${ENVJSON}.raw
-  cat ${ENVJSON}.raw | jq -s -c "${junit_template}" >> ${ENVJSON}
+  junit_template=$(echo ".[].data + { \"timestamp\": \"$dt\", "time": 0}")
+  go run main.go env verify --interface="$INTERFACE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format > $ENVJSONRAW
+  cat $ENVJSON.raw | jq -s -c "$junit_template" > $ENVJSON
   popd >/dev/null 2>&1
 }
 
 collect_data() {
   pushd "$COLLECTORPATH" >/dev/null 2>&1
   echo "Collecting $DURATION of data. Please wait..."
-  go run main.go collect --interface="${INTERFACE_NAME}" --kubeconfig="${LOCAL_KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --duration=${DURATION}
-  go run main.go logs -k="${LOCAL_KUBECONFIG}" -o="${DATADIR}" --since="${DURATION}"
+  go run main.go collect --interface="$INTERFACE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --output="$DATADIR/collected.log" --use-analyser-format --duration=$DURATION
+  go run main.go logs -k="$LOCAL_KUBECONFIG" -o="$DATADIR" --since="$DURATION"
   popd >/dev/null 2>&1
 }
 
@@ -168,26 +169,26 @@ analyse_data() {
   PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $DATADIR/collected.log 'dpll/time-error' >> $DPLL_DEMUXED_PATH
 
   cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
-["tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "${PTP_DAEMON_LOGFILE}"]
-["tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "${PTP_DAEMON_LOGFILE}"]
-["tests/sync/G.8272/time-error-in-locked-mode/PHC-to-SYS/RAN/testimpl.py", "${PTP_DAEMON_LOGFILE}"]
-["tests/sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-A/testimpl.py", "${GNSS_DEMUXED_PATH}"]
-["tests/sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-B/testimpl.py", "${GNSS_DEMUXED_PATH}"]
-["tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A/testimpl.py", "${DPLL_DEMUXED_PATH}"]
-["tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-B/testimpl.py", "${DPLL_DEMUXED_PATH}"]
+["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/time-error-in-locked-mode/PHC-to-SYS/RAN/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-A/testimpl.py", "$GNSS_DEMUXED_PATH"]
+["sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-B/testimpl.py", "$GNSS_DEMUXED_PATH"]
+["sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A/testimpl.py", "$DPLL_DEMUXED_PATH"]
+["sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-B/testimpl.py", "$DPLL_DEMUXED_PATH"]
 EOF
-  env PYTHONPATH=$TDPATH:$PPPATH python3 -m testdrive.run "$BASEURL_TEST_IDS" --basedir="$ANALYSERPATH" $ARTEFACTDIR/testdrive_config.json
+  env PYTHONPATH=$TDPATH:$PPPATH python3 -m testdrive.run "$BASEURL_TEST_IDS" --basedir="$ANALYSERPATH/tests" $ARTEFACTDIR/testdrive_config.json
   popd >/dev/null 2>&1
 }
 
 create_junit() {
-  cat ${ENVJSON} | \
+  cat $ENVJSON | \
         env PYTHONPATH=$TDPATH python3 -m testdrive.junit --baseurl-ids="$BASEURL_ENV_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "Environment" - \
-        > ${ENVJUNIT}
+        > $ENVJUNIT
 
-  cat ${TESTJSON} | \
+  cat $TESTJSON | \
         env PYTHONPATH=$TDPATH python3 -m testdrive.junit --baseurl-ids="$BASEURL_TEST_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "T-GM Tests" - \
-        > ${TESTJUNIT}
+        > $TESTJUNIT
 
   junitparser merge ${ARTEFACTDIR}/*.junit ${FULLJUNIT}
 }
