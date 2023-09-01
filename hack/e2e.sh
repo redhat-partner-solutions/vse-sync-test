@@ -85,6 +85,7 @@ check_vars() {
     TESTROOT=$(pwd)
     COLLECTORPATH=$TESTROOT/vse-sync-collection-tools
     ANALYSERPATH=$TESTROOT/vse-sync-test
+    REPORTGENPATH=$TESTROOT/vse-sync-test-report
     TDPATH=$TESTROOT/testdrive/src
     PPPATH=$ANALYSERPATH/vse-sync-pp/src
 
@@ -92,9 +93,11 @@ check_vars() {
     DATADIR=$OUTPUTDIR/collected # Raw collected data/logs
     ARTEFACTDIR=$OUTPUTDIR/artefacts # place mid pipeline files here
     PLOTDIR=$OUTPUTDIR/plots
+    REPORTARTEFACTDIR=$OUTPUTDIR/artefacts/report
 
     mkdir -p $DATADIR
     mkdir -p $ARTEFACTDIR
+    mkdir -p $REPORTARTEFACTDIR
     mkdir -p $PLOTDIR
 
     GNSS_DEMUXED_PATH=$ARTEFACTDIR/gnss-terror.demuxed
@@ -112,12 +115,12 @@ check_vars() {
     FULLJUNIT="$OUTPUTDIR/sync_test_report.xml"
 
     pushd "$ANALYSERPATH" >/dev/null 2>&1
-    local commit="$(git show -s --format=%H HEAD)"
+    SYNCTESTCOMMIT="$(git show -s --format=%H HEAD)"
     popd >/dev/null 2>&1
 
     BASEURL_ENV_IDS=https://github.com/redhat-partner-solutions/vse-sync-test/tree/main/
     BASEURL_TEST_IDS=https://docs.engineering.redhat.com/vse-sync-test/
-    BASEURL_SPECS=https://github.com/redhat-partner-solutions/vse-sync-test/blob/${COMMIT}/
+    BASEURL_SPECS=https://github.com/redhat-partner-solutions/vse-sync-test/blob/$SYNCTESTCOMMIT/
 }
 
 audit_repo() {
@@ -126,6 +129,7 @@ audit_repo() {
   {
     "path": "$1",
     "commit": "$(git show -s --format=%H HEAD)",
+    "branch": "$(git branch --show-current)",
     "status": "$(git status --short)"
     }
 EOF
@@ -139,6 +143,7 @@ audit_container() {
   "vse-sync-test": $(audit_repo $ANALYSERPATH),
   "vse-sync-pp": $(audit_repo $PPPATH),
   "testdrive": $(audit_repo $TDPATH),
+  "vse-sync-test-report": $(audit_repo $REPORTGENPATH)
 }'
 EOF
 }
@@ -149,7 +154,7 @@ verify_env(){
   dt=$(date --rfc-3339='seconds' -u)
   junit_template=$(echo ".[].data + { \"timestamp\": \"$dt\", "time": 0}")
   go run main.go env verify --interface="$INTERFACE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format > $ENVJSONRAW
-  cat $ENVJSON.raw | jq -s -c "$junit_template" > $ENVJSON
+  cat $ENVJSONRAW | jq -s -c "$junit_template" > $ENVJSON
   popd >/dev/null 2>&1
 }
 
@@ -177,7 +182,7 @@ analyse_data() {
 ["sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A/testimpl.py", "$DPLL_DEMUXED_PATH"]
 ["sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-B/testimpl.py", "$DPLL_DEMUXED_PATH"]
 EOF
-  env PYTHONPATH=$TDPATH:$PPPATH python3 -m testdrive.run "$BASEURL_TEST_IDS" --basedir="$ANALYSERPATH/tests" $ARTEFACTDIR/testdrive_config.json
+  env PYTHONPATH=$TDPATH:$PPPATH python3 -m testdrive.run "$BASEURL_TEST_IDS" --basedir="$ANALYSERPATH/tests" --imagedir="$PLOTDIR" --plotter="../plot.py" $ARTEFACTDIR/testdrive_config.json
   popd >/dev/null 2>&1
 }
 
@@ -190,26 +195,50 @@ create_junit() {
         env PYTHONPATH=$TDPATH python3 -m testdrive.junit --baseurl-ids="$BASEURL_TEST_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "T-GM Tests" - \
         > $TESTJUNIT
 
-  junitparser merge ${ARTEFACTDIR}/*.junit ${FULLJUNIT}
+  junitparser merge $ARTEFACTDIR/*.junit $FULLJUNIT
 }
 
-create_charts() {
-  env PYTHONPATH=$PPPATH python3 -m vse_sync_pp.plot -c $GNSS_DEMUXED_PATH gnss/time-error $PLOTDIR/gnss-terror.png
-  env PYTHONPATH=$PPPATH python3 -m vse_sync_pp.plot -c $DPLL_DEMUXED_PATH dpll/time-error $PLOTDIR/dpll-terror.png
+create_pdf() {
+  pushd "$REPORTGENPATH" >/dev/null 2>&1
+  local config=$ARTEFACTDIR/reportgen_config.json
+  cat << EOF >> $config
+{
+    "subject": "Synchronization Test Report: T-GM with GNSS",
+    "description": "T-GM with GNSS",
+    "brief": "This test report contains test results and analysis for T-GM with GNSS using Intel WPC NIC. Synchronization test cases are primarily at the solution and system level.",
+    "repositories": {
+        "vse-sync-test.git": "$ANALYSERPATH/tests/"
+    },
+    "suites": {
+        "Environment": {
+            "repository": "vse-sync-test.git",
+            "baseurl": "${BASEURL_ENV_IDS}tests/"
+        },
+        "T-GM Tests": {
+            "repository": "vse-sync-test.git",
+            "baseurl": "$BASEURL_TEST_IDS"
+        }
+    }
 }
+EOF
+  env PYTHONPATH=$TDPATH make CONFIG=$config JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR GIT_HASH=$SYNCTESTCOMMIT clean
+  env PYTHONPATH=$TDPATH make CONFIG=$config JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR GIT_HASH=$SYNCTESTCOMMIT all
 
-create_adoc() {
-  cat ${ENVJSON} | env PYTHONPATH=$TDPATH python3 -m testdrive.asciidoc "Environment" - >  ${ENVADOC}
-  cat ${TESTJSON} | env PYTHONPATH=$TDPATH python3 -m testdrive.asciidoc "T-GM Tests" - >  ${TESTADOC}
+  mv $REPORTARTEFACTDIR/test-report.pdf $OUTPUTDIR
+  popd >/dev/null 2>&1
 }
 
 check_vars
 audit_container > $DATADIR/repo_audit
-verify_env
-collect_data
-analyse_data >"$TESTJSON"
+# verify_env
+# collect_data
+analyse_data > $TESTJSON
 create_junit
-create_charts
-create_adoc
+create_pdf
 
-cat ${FULLJUNIT}
+if grep -Eq '(errors|failures)=\"([^0].*?)\"' $FULLJUNIT
+then
+    exit 1
+else
+    exit 0
+fi

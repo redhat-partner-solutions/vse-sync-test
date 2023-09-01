@@ -14,8 +14,8 @@
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 
-RUN microdnf install -y git golang python3 python3-pip tar python3-yaml jq
-RUN pip3 install pandas junitparser matplotlib
+RUN microdnf install -y git golang python3 python3-pip tar python3-yaml jq podman
+RUN pip3 install pandas junitparser
 
 ADD https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz /tmp
 RUN tar -C /usr/bin -xzf /tmp/openshift-client-linux.tar.gz 
@@ -27,9 +27,11 @@ WORKDIR ${VSE_DIR}
 RUN mkdir -p -m 0600 ~/.ssh && \
     ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 
-RUN --mount=type=ssh git clone --depth=1 git@github.com:redhat-partner-solutions/testdrive.git
+RUN --mount=type=ssh git clone --depth=1 git@github.com:redhat-partner-solutions/testdrive.git --branch=plot-it
 
-RUN --mount=type=ssh git clone --depth=1 git@github.com:redhat-partner-solutions/vse-sync-test.git
+RUN --mount=type=ssh git clone git@github.com:redhat-partner-solutions/vse-sync-test-report.git --branch=Makefile
+
+RUN --mount=type=ssh git clone --depth=1 git@github.com:redhat-partner-solutions/vse-sync-test.git --branch=tmp-cwr
 WORKDIR ${VSE_DIR}/vse-sync-test
 RUN --mount=type=ssh git submodule update --init --recursive
 
