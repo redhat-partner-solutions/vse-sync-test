@@ -1,5 +1,5 @@
 #!/bin/sh
-# Start in the directory containing the `vse-sync-test` and `vse-sync-collection-tools` repositories.
+# Start in the directory containing each of the repositories.
 
 set -e
 set -o pipefail
@@ -106,9 +106,6 @@ check_vars() {
     ENVJSONRAW="$ARTEFACTDIR/env.json.raw"
     ENVJSON="$DATADIR/env.json"
     TESTJSON="$ARTEFACTDIR/test.json"
-
-    ENVADOC="$ARTEFACTDIR/env.adoc"
-    TESTADOC="$ARTEFACTDIR/test.adoc"
 
     ENVJUNIT="$ARTEFACTDIR/env.junit"
     TESTJUNIT="$ARTEFACTDIR/test.junit"
@@ -221,8 +218,8 @@ create_pdf() {
     }
 }
 EOF
-  env PYTHONPATH=$TDPATH make CONFIG=$config JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR GIT_HASH=$SYNCTESTCOMMIT clean
-  env PYTHONPATH=$TDPATH make CONFIG=$config JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR GIT_HASH=$SYNCTESTCOMMIT all
+  env PYTHONPATH=$TDPATH make CONFIG=$config JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR BUILDER=native GIT_HASH=$(echo "$SYNCTESTCOMMIT" | head -c 8) clean
+  env PYTHONPATH=$TDPATH make CONFIG=$config JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR BUILDER=native GIT_HASH=$(echo "$SYNCTESTCOMMIT" | head -c 8) all
 
   mv $REPORTARTEFACTDIR/test-report.pdf $OUTPUTDIR
   popd >/dev/null 2>&1
@@ -230,12 +227,13 @@ EOF
 
 check_vars
 audit_container > $DATADIR/repo_audit
-# verify_env
-# collect_data
+verify_env
+collect_data
 analyse_data > $TESTJSON
 create_junit
 create_pdf
 
+# Make exit code indicate test results rather than successful completion. 
 if grep -Eq '(errors|failures)=\"([^0].*?)\"' $FULLJUNIT
 then
     exit 1

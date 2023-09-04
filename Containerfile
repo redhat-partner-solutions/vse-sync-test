@@ -14,8 +14,9 @@
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 
-RUN microdnf install -y git golang python3 python3-pip tar python3-yaml jq podman
-RUN pip3 install pandas junitparser
+RUN microdnf install -y git golang python3 python3-pip tar python3-yaml jq ruby
+RUN pip3 install pandas junitparser matplotlib
+RUN gem install asciidoctor-pdf:1.6.2 asciidoctor-diagram:2.0.1
 
 ADD https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz /tmp
 RUN tar -C /usr/bin -xzf /tmp/openshift-client-linux.tar.gz 
