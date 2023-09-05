@@ -29,6 +29,8 @@ RUN mkdir -p -m 0600 ~/.ssh && \
 
 RUN --mount=type=ssh git clone --depth=1 git@github.com:redhat-partner-solutions/testdrive.git
 
+RUN --mount=type=ssh git clone --depth=1 git@github.com:redhat-partner-solutions/vse-sync-test-report.git
+
 RUN --mount=type=ssh git clone --depth=1 git@github.com:redhat-partner-solutions/vse-sync-test.git
 WORKDIR ${VSE_DIR}/vse-sync-test
 RUN --mount=type=ssh git submodule update --init --recursive
