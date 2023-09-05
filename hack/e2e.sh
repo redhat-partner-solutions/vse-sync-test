@@ -66,13 +66,30 @@ check_vars() {
 
     ENVJSON="${RESULTSDIR}/env.json"
     TESTJSON="${RESULTSDIR}/test.json"
+}
 
-    ENVADOC="${RESULTSDIR}/env.adoc"
-    TESTADOC="${RESULTSDIR}/test.adoc"
+audit_repo() {
+  pushd "$1" >/dev/null 2>&1
+  cat - << EOF
+  {
+    "path": "$1",
+    "commit": "$(git show -s --format=%H HEAD)",
+    "branch": "$(git branch --show-current)",
+    "status": "$(git status --short)"
+    }
+EOF
+  popd >/dev/null 2>&1
+}
 
-    ENVJUNIT="${RESULTSDIR}/env.junit"
-    TESTJUNIT="${RESULTSDIR}/test.junit"
-    FULLJUNIT="${RESULTSDIR}/combined.junit"
+audit_container() {
+  cat - << EOF
+{
+  "vse-sync-collection-tools": $(audit_repo $COLLECTORPATH),
+  "vse-sync-test": $(audit_repo $ANALYSERPATH),
+  "vse-sync-pp": $(audit_repo $PPPATH),
+  "testdrive": $(audit_repo $TDPATH)
+}
+EOF
 }
 
 verify_env(){
@@ -162,6 +179,7 @@ while [[ $1 == -* ]]; do
 done
 
 check_vars
+audit_container > $DATADIR/repo_audit
 verify_env
 collect_data
 analyse_data
