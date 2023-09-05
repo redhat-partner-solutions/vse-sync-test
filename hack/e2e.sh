@@ -1,32 +1,63 @@
 #!/bin/sh
-# Start in the directory containing the `vse-sync-test` and `vse-sync-collection-tools` repositories.
+# Start from a directory containing each of the repositories:
+# `vse-sync-collection-tools`, `vse-sync-test`, `vse-sync-test-report`, and `testdrive`.
+
 set -e
+set -o pipefail
+
 # defaults
 DURATION=2000s
 
 usage() {
-	read -d '' usage_prompt <<- EOF
-	Usage: $0 -k KUBECONFIG [-i INTERFACE_NAME] [-d DURATION]
+    cat - <<EOF
+Usage: $(basename "$0") -k KUBECONFIG [-i INTERFACE_NAME] [-d DURATION]
 
-    Options (required):
-        -k: Path to the kubeconfig to be used
+Arguments:
+    -k: path to the kubeconfig to be used
 
-    Options (optional):
-        -i: name of the interface to gather data about
-        -d: How many seconds to run data collection.
-    
-    Example Usage:
-        $0 -k ~/kubeconfig
+Options (optional):
+    -i: name of the interface to gather data about
+    -d: how many seconds to run data collection
 
-	EOF
-
-	echo -e "$usage_prompt"
+Example Usage:
+    $(basename "$0") -k ~/kubeconfig
+EOF
 }
+
+# Parge args beginning with -
+while [[ $1 == -* ]]; do
+    case "$1" in
+      -h|--help|-\?) usage; exit 0;;
+      -k) if (($# > 1)); then
+            export LOCAL_KUBECONFIG=$2; shift 2
+          else
+            echo "-k requires an argument" 1>&2
+            usage
+            exit 1
+          fi ;;
+      -i) if (($# > 1)); then
+            export INTERFACE_NAME=$2; shift 2
+          else
+            echo "-i requires an argument" 1>&2
+            usage
+            exit 1
+          fi ;;
+      -d) if (($# > 1)); then
+            export DURATION=$2; shift 2
+          else
+            echo "-d requires an argument" 1>&2
+            usage
+            exit 1
+          fi ;;		  
+      --) shift; break;;
+      -*) echo "invalid option: $1" 1>&2; usage; exit 1;;
+    esac
+done
 
 check_vars() {
     local required_vars=('LOCAL_KUBECONFIG')
     local required_vars_err_messages=(
-	'KUBECONFIG is invalid or not given. Use the -k option to provide path to one or more kubeconfig files.'
+	'KUBECONFIG is invalid or not given. Use the -k option to provide path to kubeconfig file.'
 	)
 	local var_missing=false
 
@@ -147,36 +178,6 @@ create_adoc() {
   cat ${ENVJSON} | env PYTHONPATH=$TDPATH python3 -m testdrive.asciidoc "Environment" - >  ${ENVADOC}
   cat ${TESTJSON} | env PYTHONPATH=$TDPATH python3 -m testdrive.asciidoc "T-GM Tests" - >  ${TESTADOC}
 }
-
-# Parge args beginning with -
-while [[ $1 == -* ]]; do
-    case "$1" in
-      -h|--help|-\?) usage; exit 0;;
-      -k) if (($# > 1)); then
-            export LOCAL_KUBECONFIG=$2; shift 2
-          else
-            echo "-k requires an argument" 1>&2
-            usage
-            exit 1
-          fi ;;
-      -i) if (($# > 1)); then
-            export INTERFACE_NAME=$2; shift 2
-          else
-            echo "-i requires an argument" 1>&2
-            usage
-            exit 1
-          fi ;;
-      -d) if (($# > 1)); then
-            export DURATION=$2; shift 2
-          else
-            echo "-d requires an argument" 1>&2
-            usage
-            exit 1
-          fi ;;		  
-      --) shift; break;;
-      -*) echo "invalid option: $1" 1>&2; usage; exit 1;;
-    esac
-done
 
 check_vars
 audit_container > $DATADIR/repo_audit
