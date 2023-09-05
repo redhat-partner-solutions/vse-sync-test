@@ -85,17 +85,17 @@ gives:
 
 [source,shell]
 ----
-  /home/redhat/tmp/data/
-  ├── collected.log
-  ├── dpll-terror.demuxed
-  ├── gnss-terror.demuxed
-  ├── linuxptp-daemon-container-230808T224217
-  └── results
-      ├── combined.junit
-      ├── env.adoc
-      ├── env.json
-      ├── env.junit
-      ├── test.adoc
-      ├── test.json
-      └── test.junit
+/home/redhat/tmp/data/
+├── artefacts
+│   └── <SNIP. contents is all temporary to support execution and can be safely discarded>
+├── collected
+│   ├── collected.log
+│   ├── env.json
+│   ├── linuxptp-daemon-container.log
+│   └── repo_audit
+├── sync_test_report.xml
+└── test-report.pdf
 ----
+
+
+
