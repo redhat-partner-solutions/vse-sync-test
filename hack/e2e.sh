@@ -86,6 +86,7 @@ check_vars() {
     TESTROOT=$(pwd)
     COLLECTORPATH=$TESTROOT/vse-sync-collection-tools
     ANALYSERPATH=$TESTROOT/vse-sync-test
+    REPORTGENPATH=$TESTROOT/vse-sync-test-report
     TDPATH=$TESTROOT/testdrive/src
     PPPATH=$ANALYSERPATH/vse-sync-pp/src
 
@@ -118,7 +119,8 @@ audit_container() {
   "vse-sync-collection-tools": $(audit_repo $COLLECTORPATH),
   "vse-sync-test": $(audit_repo $ANALYSERPATH),
   "vse-sync-pp": $(audit_repo $PPPATH),
-  "testdrive": $(audit_repo $TDPATH)
+  "testdrive": $(audit_repo $TDPATH),
+  "vse-sync-test-report": $(audit_repo $REPORTGENPATH)
 }
 EOF
 }
