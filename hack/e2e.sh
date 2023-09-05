@@ -187,4 +187,10 @@ analyse_data
 create_junit
 create_adoc
 
-cat ${FULLJUNIT}
+# Make exit code indicate test results rather than successful completion. 
+if grep -Eq '(errors|failures)=\"([^0].*?)\"' $FULLJUNIT
+then
+    exit 1
+else
+    exit 0
+fi
