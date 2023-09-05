@@ -8,8 +8,8 @@ sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL
 """
 
 from argparse import ArgumentParser
-from os.path import join as joinpath
-from os.path import dirname
+from os.path import basename
+import json
 
 from vse_sync_pp.common import open_input
 from vse_sync_pp.parsers.dpll import TimeErrorParser
@@ -30,7 +30,10 @@ def main():
     with open_input(args.input) as fid:
             for parsed in parser.canonical(fid, relative=True):
                 plotter.append(parsed)
-    plotter.plot(args.output)
+    output_filename = f"{args.output}.png".replace("_testimpl", "")
+    title = basename(args.output).replace("-", " ").replace("_testimpl", "").title()
+    plotter.plot(output_filename)
+    print(json.dumps([{"title": title, "path": output_filename}]))
 
 if __name__ == '__main__':
     main()
