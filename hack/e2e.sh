@@ -29,21 +29,21 @@ while [[ $1 == -* ]]; do
     case "$1" in
       -h|--help|-\?) usage; exit 0;;
       -k) if (($# > 1)); then
-            export LOCAL_KUBECONFIG=$2; shift 2
+            LOCAL_KUBECONFIG=$2; shift 2
           else
             echo "-k requires an argument" 1>&2
             usage
             exit 1
           fi ;;
       -i) if (($# > 1)); then
-            export INTERFACE_NAME=$2; shift 2
+            INTERFACE_NAME=$2; shift 2
           else
             echo "-i requires an argument" 1>&2
             usage
             exit 1
           fi ;;
       -d) if (($# > 1)); then
-            export DURATION=$2; shift 2
+            DURATION=$2; shift 2
           else
             echo "-d requires an argument" 1>&2
             usage
@@ -63,7 +63,7 @@ check_vars() {
 
 	for index in "${!required_vars[@]}"; do
 		var=${required_vars[$index]}
-		if [[ -z ${!var} ]]; then
+		if [ -z ${!var} ]; then
 			error_message=${required_vars_err_messages[$index]}
 			echo "$0: error: $error_message" 1>&2
 			var_missing=true
@@ -76,28 +76,49 @@ check_vars() {
         exit 1
 	fi
 
-    if [[ -z $INTERFACE_NAME ]]; then
-        INTERFACE_NAME=$(oc -n openshift-ptp --kubeconfig=${LOCAL_KUBECONFIG} exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ls /sys/class/gnss/gnss0/device/net/)
-        echo "Discovered interface name: $INTERFACE_NAME"
-    else    
-        echo "Using interface name: $INTERFACE_NAME"
-    fi
+  if [[ -z $INTERFACE_NAME ]]; then
+      INTERFACE_NAME=$(oc -n openshift-ptp --kubeconfig=$LOCAL_KUBECONFIG exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ls /sys/class/gnss/gnss0/device/net/)
+      echo "Discovered interface name: $INTERFACE_NAME"
+  else    
+      echo "Using interface name: $INTERFACE_NAME"
+  fi
 
-    TESTROOT=$(pwd)
-    COLLECTORPATH=$TESTROOT/vse-sync-collection-tools
-    ANALYSERPATH=$TESTROOT/vse-sync-test
-    REPORTGENPATH=$TESTROOT/vse-sync-test-report
-    TDPATH=$TESTROOT/testdrive/src
-    PPPATH=$ANALYSERPATH/vse-sync-pp/src
+  TESTROOT=$(pwd)
+  COLLECTORPATH=$TESTROOT/vse-sync-collection-tools
+  ANALYSERPATH=$TESTROOT/vse-sync-test
+  REPORTGENPATH=$TESTROOT/vse-sync-test-report
+  TDPATH=$TESTROOT/testdrive/src
+  PPPATH=$ANALYSERPATH/vse-sync-pp/src
 
-    DATADIR=$TESTROOT/data
-    RESULTSDIR=$DATADIR/results
+  OUTPUTDIR=$TESTROOT/data
+  DATADIR=$OUTPUTDIR/collected # Raw collected data/logs
+  ARTEFACTDIR=$OUTPUTDIR/artefacts # place mid pipeline files here
+  PLOTDIR=$ARTEFACTDIR/plots
+  REPORTARTEFACTDIR=$ARTEFACTDIR/report
 
-    mkdir -p $DATADIR 
-    mkdir -p $RESULTSDIR
+  mkdir -p $DATADIR
+  mkdir -p $ARTEFACTDIR
+  mkdir -p $REPORTARTEFACTDIR
+  mkdir -p $PLOTDIR
 
-    ENVJSON="${RESULTSDIR}/env.json"
-    TESTJSON="${RESULTSDIR}/test.json"
+  GNSS_DEMUXED_PATH=$ARTEFACTDIR/gnss-terror.demuxed
+  DPLL_DEMUXED_PATH=$ARTEFACTDIR/dpll-terror.demuxed
+
+  ENVJSONRAW="$ARTEFACTDIR/env.json.raw"
+  ENVJSON="$DATADIR/env.json"
+  TESTJSON="$ARTEFACTDIR/test.json"
+
+  ENVJUNIT="$ARTEFACTDIR/env.junit"
+  TESTJUNIT="$ARTEFACTDIR/test.junit"
+  FULLJUNIT="$OUTPUTDIR/sync_test_report.xml"
+
+  pushd "$ANALYSERPATH" >/dev/null 2>&1
+  SYNCTESTCOMMIT="$(git show -s --format=%H HEAD)"
+  popd >/dev/null 2>&1
+
+  BASEURL_ENV_IDS=https://github.com/redhat-partner-solutions/vse-sync-test/tree/main/
+  BASEURL_TEST_IDS=https://docs.engineering.redhat.com/vse-sync-test/
+  BASEURL_SPECS=https://github.com/redhat-partner-solutions/vse-sync-test/blob/$SYNCTESTCOMMIT/
 }
 
 audit_repo() {
@@ -129,72 +150,91 @@ verify_env(){
   pushd "$COLLECTORPATH" >/dev/null 2>&1
   echo "Verifying test env. Please wait..."
   dt=$(date --rfc-3339='seconds' -u)
-  junit_template=$(echo ".[].data + { \"timestamp\": \"${dt}\", "time": 0}")
-  go run main.go env verify --interface="${INTERFACE_NAME}" --kubeconfig="${LOCAL_KUBECONFIG}" --use-analyser-format >> ${ENVJSON}.raw
-  cat ${ENVJSON}.raw | jq -s -c "${junit_template}" >> ${ENVJSON}
+  local junit_template=$(echo ".[].data + { \"timestamp\": \"$dt\", "time": 0}")
+  go run main.go env verify --interface="$INTERFACE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format > $ENVJSONRAW
+  cat $ENVJSONRAW | jq -s -c "$junit_template" > $ENVJSON
   popd >/dev/null 2>&1
 }
 
 collect_data() {
   pushd "$COLLECTORPATH" >/dev/null 2>&1
   echo "Collecting $DURATION of data. Please wait..."
-  go run main.go collect --interface="${INTERFACE_NAME}" --kubeconfig="${LOCAL_KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --duration=${DURATION}
-  go run main.go logs -k="${LOCAL_KUBECONFIG}" -o="${DATADIR}" --since="${DURATION}"
+  go run main.go collect --interface="$INTERFACE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --output="$DATADIR/collected.log" --use-analyser-format --duration=$DURATION
+  go run main.go logs -k="$LOCAL_KUBECONFIG" -o="$DATADIR" --since="$DURATION"
   popd >/dev/null 2>&1
 }
 
 analyse_data() {
   pushd "$ANALYSERPATH" >/dev/null 2>&1
-  PTP_DAEMON_LOGFILE=$(ls -tr1 $DATADIR/linuxptp-daemon-container-* | tail -n 1)
+  local PTP_DAEMON_LOGFILE=$(ls -tr1 $DATADIR/linuxptp-daemon-container-* | tail -n 1)
 
-  GNSS_DEMUXED_PATH=$DATADIR/gnss-terror.demuxed
-  DPLL_DEMUXED_PATH=$DATADIR/dpll-terror.demuxed
+  PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $DATADIR/collected.log 'gnss/time-error' >> $GNSS_DEMUXED_PATH
+  PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $DATADIR/collected.log 'dpll/time-error' >> $DPLL_DEMUXED_PATH
 
-  PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux  $DATADIR/collected.log 'gnss/time-error' >> $GNSS_DEMUXED_PATH
-  PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux  $DATADIR/collected.log 'dpll/time-error' >> $DPLL_DEMUXED_PATH
-
-  DRIVE_TESTS_JSON="tests.json"
-  SPACER="    "
-  echo "[" > $DRIVE_TESTS_JSON
-  echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py\", \"${PTP_DAEMON_LOGFILE}\"]," >> $DRIVE_TESTS_JSON
-  echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py\", \"${PTP_DAEMON_LOGFILE}\"]," >> $DRIVE_TESTS_JSON
-  echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/PHC-to-SYS/RAN/testimpl.py\", \"${PTP_DAEMON_LOGFILE}\"]," >> $DRIVE_TESTS_JSON
-  echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-A/testimpl.py\", \"${GNSS_DEMUXED_PATH}\"]," >> $DRIVE_TESTS_JSON
-  echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-B/testimpl.py\", \"${GNSS_DEMUXED_PATH}\"]," >> $DRIVE_TESTS_JSON
-  echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A/testimpl.py\", \"${DPLL_DEMUXED_PATH}\"]," >> $DRIVE_TESTS_JSON
-  # Remember to fixup trailing commas if you amend this!
-  echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-B/testimpl.py\", \"${DPLL_DEMUXED_PATH}\"]" >> $DRIVE_TESTS_JSON
-  echo "]" >> $DRIVE_TESTS_JSON
-
-  BRANCHNAME=$(git branch --show-current)
-
-  env PYTHONPATH=$TDPATH:$PPPATH python3 -m testdrive.run https://github.com/redhat-partner-solutions/vse-sync-test/tree/${BRANCHNAME} $DRIVE_TESTS_JSON >> ${TESTJSON}
+  cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
+["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/time-error-in-locked-mode/PHC-to-SYS/RAN/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-A/testimpl.py", "$GNSS_DEMUXED_PATH"]
+["sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-B/testimpl.py", "$GNSS_DEMUXED_PATH"]
+["sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A/testimpl.py", "$DPLL_DEMUXED_PATH"]
+["sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-B/testimpl.py", "$DPLL_DEMUXED_PATH"]
+EOF
+  env PYTHONPATH=$TDPATH:$PPPATH python3 -m testdrive.run "$BASEURL_TEST_IDS" --basedir="$ANALYSERPATH/tests" --imagedir="$PLOTDIR" --plotter="../plot.py" $ARTEFACTDIR/testdrive_config.json
   popd >/dev/null 2>&1
 }
 
 create_junit() {
-  cat ${ENVJSON} | env PYTHONPATH=$TDPATH python3 -m testdrive.junit --prettify "Environment" - >  ${ENVJUNIT}
-  cat ${TESTJSON} | env PYTHONPATH=$TDPATH python3 -m testdrive.junit --prettify "T-GM Tests" - >  ${TESTJUNIT}
+  cat $ENVJSON | \
+        env PYTHONPATH=$TDPATH python3 -m testdrive.junit --baseurl-ids="$BASEURL_ENV_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "Environment" - \
+        > $ENVJUNIT
 
-  junitparser merge ${RESULTSDIR}/*.junit ${FULLJUNIT}
+  cat $TESTJSON | \
+        env PYTHONPATH=$TDPATH python3 -m testdrive.junit --baseurl-ids="$BASEURL_TEST_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "T-GM Tests" - \
+        > $TESTJUNIT
+
+  junitparser merge $ARTEFACTDIR/*.junit $FULLJUNIT
 }
 
-create_adoc() {
-  cat ${ENVJSON} | env PYTHONPATH=$TDPATH python3 -m testdrive.asciidoc "Environment" - >  ${ENVADOC}
-  cat ${TESTJSON} | env PYTHONPATH=$TDPATH python3 -m testdrive.asciidoc "T-GM Tests" - >  ${TESTADOC}
+create_pdf() {
+  pushd "$REPORTGENPATH" >/dev/null 2>&1
+  local config=$ARTEFACTDIR/reportgen_config.json
+  cat << EOF >> $config
+{
+    "title": "Synchronization Test Report",
+    "subtitle": "T-GM with GNSS",
+    "repositories": {
+        "vse-sync-test.git": "$ANALYSERPATH/tests/"
+    },
+    "suites": {
+        "Environment": {
+            "repository": "vse-sync-test.git",
+            "baseurl": "${BASEURL_ENV_IDS}tests/"
+        },
+        "T-GM Tests": {
+            "repository": "vse-sync-test.git",
+            "baseurl": "$BASEURL_TEST_IDS"
+        }
+    }
+}
+EOF
+  env PYTHONPATH=$TDPATH make CONFIG=$config JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR BUILDER=native GIT_HASH=$(echo "$SYNCTESTCOMMIT" | head -c 8) clean
+  env PYTHONPATH=$TDPATH make CONFIG=$config JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR BUILDER=native GIT_HASH=$(echo "$SYNCTESTCOMMIT" | head -c 8) all
+
+  mv $REPORTARTEFACTDIR/test-report.pdf $OUTPUTDIR
+  popd >/dev/null 2>&1
 }
 
 check_vars
 audit_container > $DATADIR/repo_audit
 verify_env
 collect_data
-analyse_data
+analyse_data > $TESTJSON
 create_junit
-create_adoc
+create_pdf
 
 # Make exit code indicate test results rather than successful completion. 
-if grep -Eq '(errors|failures)=\"([^0].*?)\"' $FULLJUNIT
-then
+if grep -Eq '(errors|failures)=\"([^0].*?)\"' $FULLJUNIT; then
     exit 1
 else
     exit 0
