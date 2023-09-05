@@ -124,47 +124,50 @@ EOF
 }
 
 verify_env(){
+  pushd "$COLLECTORPATH" >/dev/null 2>&1
   echo "Verifying test env. Please wait..."
-  cd $COLLECTORPATH
   dt=$(date --rfc-3339='seconds' -u)
   junit_template=$(echo ".[].data + { \"timestamp\": \"${dt}\", "time": 0}")
   go run main.go env verify --interface="${INTERFACE_NAME}" --kubeconfig="${LOCAL_KUBECONFIG}" --use-analyser-format >> ${ENVJSON}.raw
   cat ${ENVJSON}.raw | jq -s -c "${junit_template}" >> ${ENVJSON}
+  popd >/dev/null 2>&1
 }
 
 collect_data() {
-    echo "Collecting $DURATION of data. Please wait..."
-    cd $COLLECTORPATH
-    go run main.go collect --interface="${INTERFACE_NAME}" --kubeconfig="${LOCAL_KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --duration=${DURATION}
-    go run main.go logs -k="${LOCAL_KUBECONFIG}" -o="${DATADIR}" --since="${DURATION}"
+  pushd "$COLLECTORPATH" >/dev/null 2>&1
+  echo "Collecting $DURATION of data. Please wait..."
+  go run main.go collect --interface="${INTERFACE_NAME}" --kubeconfig="${LOCAL_KUBECONFIG}" --output="${DATADIR}/collected.log" --use-analyser-format --duration=${DURATION}
+  go run main.go logs -k="${LOCAL_KUBECONFIG}" -o="${DATADIR}" --since="${DURATION}"
+  popd >/dev/null 2>&1
 }
 
 analyse_data() {
-    PTP_DAEMON_LOGFILE=$(ls -tr1 $DATADIR/linuxptp-daemon-container-* | tail -n 1)
+  pushd "$ANALYSERPATH" >/dev/null 2>&1
+  PTP_DAEMON_LOGFILE=$(ls -tr1 $DATADIR/linuxptp-daemon-container-* | tail -n 1)
 
-    GNSS_DEMUXED_PATH=$DATADIR/gnss-terror.demuxed
-    DPLL_DEMUXED_PATH=$DATADIR/dpll-terror.demuxed
+  GNSS_DEMUXED_PATH=$DATADIR/gnss-terror.demuxed
+  DPLL_DEMUXED_PATH=$DATADIR/dpll-terror.demuxed
 
-    PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux  $DATADIR/collected.log 'gnss/time-error' >> $GNSS_DEMUXED_PATH
-    PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux  $DATADIR/collected.log 'dpll/time-error' >> $DPLL_DEMUXED_PATH
+  PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux  $DATADIR/collected.log 'gnss/time-error' >> $GNSS_DEMUXED_PATH
+  PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux  $DATADIR/collected.log 'dpll/time-error' >> $DPLL_DEMUXED_PATH
 
-    cd ${ANALYSERPATH}
-    DRIVE_TESTS_JSON="tests.json"
-    SPACER="    "
-    echo "[" > $DRIVE_TESTS_JSON
-    echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py\", \"${PTP_DAEMON_LOGFILE}\"]," >> $DRIVE_TESTS_JSON
-    echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py\", \"${PTP_DAEMON_LOGFILE}\"]," >> $DRIVE_TESTS_JSON
-    echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/PHC-to-SYS/RAN/testimpl.py\", \"${PTP_DAEMON_LOGFILE}\"]," >> $DRIVE_TESTS_JSON
-    echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-A/testimpl.py\", \"${GNSS_DEMUXED_PATH}\"]," >> $DRIVE_TESTS_JSON
-    echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-B/testimpl.py\", \"${GNSS_DEMUXED_PATH}\"]," >> $DRIVE_TESTS_JSON
-    echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A/testimpl.py\", \"${DPLL_DEMUXED_PATH}\"]," >> $DRIVE_TESTS_JSON
-    # Remember to fixup trailing commas if you amend this!
-    echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-B/testimpl.py\", \"${DPLL_DEMUXED_PATH}\"]" >> $DRIVE_TESTS_JSON
-    echo "]" >> $DRIVE_TESTS_JSON
+  DRIVE_TESTS_JSON="tests.json"
+  SPACER="    "
+  echo "[" > $DRIVE_TESTS_JSON
+  echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py\", \"${PTP_DAEMON_LOGFILE}\"]," >> $DRIVE_TESTS_JSON
+  echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py\", \"${PTP_DAEMON_LOGFILE}\"]," >> $DRIVE_TESTS_JSON
+  echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/PHC-to-SYS/RAN/testimpl.py\", \"${PTP_DAEMON_LOGFILE}\"]," >> $DRIVE_TESTS_JSON
+  echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-A/testimpl.py\", \"${GNSS_DEMUXED_PATH}\"]," >> $DRIVE_TESTS_JSON
+  echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-B/testimpl.py\", \"${GNSS_DEMUXED_PATH}\"]," >> $DRIVE_TESTS_JSON
+  echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A/testimpl.py\", \"${DPLL_DEMUXED_PATH}\"]," >> $DRIVE_TESTS_JSON
+  # Remember to fixup trailing commas if you amend this!
+  echo "${SPACER}[\"tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-B/testimpl.py\", \"${DPLL_DEMUXED_PATH}\"]" >> $DRIVE_TESTS_JSON
+  echo "]" >> $DRIVE_TESTS_JSON
 
-    BRANCHNAME=$(git branch --show-current)
+  BRANCHNAME=$(git branch --show-current)
 
-    env PYTHONPATH=$TDPATH:$PPPATH python3 -m testdrive.run https://github.com/redhat-partner-solutions/vse-sync-test/tree/${BRANCHNAME} $DRIVE_TESTS_JSON >> ${TESTJSON}
+  env PYTHONPATH=$TDPATH:$PPPATH python3 -m testdrive.run https://github.com/redhat-partner-solutions/vse-sync-test/tree/${BRANCHNAME} $DRIVE_TESTS_JSON >> ${TESTJSON}
+  popd >/dev/null 2>&1
 }
 
 create_junit() {
