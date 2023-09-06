@@ -26,7 +26,7 @@ def main():
     aparser.add_argument('input', help="input data file")
     args = aparser.parse_args()
     parser = TimeErrorParser()
-    plotter = Plotter(parser.y_name, "Time Error (Unfiltered)")
+    plotter = Plotter(parser.y_name, "Time Error (unfiltered)")
     with open_input(args.input) as fid:
             for parsed in parser.parse(fid):
                 plotter.append(parsed)
