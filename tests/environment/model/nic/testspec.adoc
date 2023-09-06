@@ -1,0 +1,25 @@
+= NIC model
+
+This test ensures that the Network Interface Card (NIC) model in the System
+Under Test (SUT) is the expected model.
+
+== Goal
+
+Verify that the SUT has a specific NIC model.
+
+== Scope
+
+* Environment verification
+
+== Out of scope
+
+* _empty_
+
+== Acceptance criteria
+
+1. The NIC model is exactly the model specified in the test configuration
+
+== Test procedure
+
+1. Gather the NIC model in the SUT
+2. Verify the model meets acceptance criteria
