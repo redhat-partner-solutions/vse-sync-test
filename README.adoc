@@ -97,5 +97,12 @@ gives:
 └── test-report.pdf
 ----
 
+== Advanced container usage
 
+If you need more capabilities then providing a different commend to the container, or starting a session inside it, to get access to the individual tools.
+For example to run analysis over an existing dataset stored in `~/tmp/data/` the follow command could be used:
 
+[source,shell]
+----
+podman run -v ~/kubeconfig-cormorant:/usr/vse/kubeconfig -v ~/tmp/data:/usr/vse/data quay.io/redhat-partner-solutions/vse-sync-test:latest ./vse-sync-test/hack/e2e.sh -s
+----
