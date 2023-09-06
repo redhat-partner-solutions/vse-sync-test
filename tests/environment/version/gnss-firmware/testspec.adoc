@@ -1,0 +1,25 @@
+= GNSS device firmware version
+
+This test ensures that the GNSS device firmware version running in the System
+Under Test (SUT) is exactly the version expected.
+
+== Goal
+
+Verify that the SUT is running a specific GNSS device firmware version.
+
+== Scope
+
+* Environment verification
+
+== Out of scope
+
+* _empty_
+
+== Acceptance criteria
+
+1. The GNSS device firmware version is exactly the version specified in the test configuration
+
+== Test procedure
+
+1. Gather the GNSS device firmware version running in the SUT
+2. Verify the version meets acceptance criteria
