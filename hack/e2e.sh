@@ -7,6 +7,7 @@ set -o pipefail
 
 # defaults
 DURATION=2000s
+COLLECT_DATA=true
 
 usage() {
     cat - <<EOF
@@ -18,6 +19,7 @@ Arguments:
 Options (optional):
     -i: name of the interface to gather data about
     -d: how many seconds to run data collection
+    -s: skip data collection and run analysis only. This requires a pre-existing dataset to be present in `data/collected/`
 
 Example Usage:
     $(basename "$0") -k ~/kubeconfig
@@ -48,39 +50,26 @@ while [[ $1 == -* ]]; do
             echo "-d requires an argument" 1>&2
             usage
             exit 1
-          fi ;;		  
+          fi ;;		
+      -s)
+        COLLECT_DATA=false; shift;; 
       --) shift; break;;
       -*) echo "invalid option: $1" 1>&2; usage; exit 1;;
     esac
 done
 
 check_vars() {
-    local required_vars=('LOCAL_KUBECONFIG')
-    local required_vars_err_messages=(
-	'KUBECONFIG is invalid or not given. Use the -k option to provide path to kubeconfig file.'
-	)
-	local var_missing=false
+  if [ $COLLECT_DATA = true ]; then
+    if [ -z $LOCAL_KUBECONFIG ]; then
+      echo "$0: error: LOCAL_KUBECONFIG is invalid or not given. Use the -k option to provide path to kubeconfig file." 1>&2
+      usage
+      exit 1
+    fi
 
-	for index in "${!required_vars[@]}"; do
-		var=${required_vars[$index]}
-		if [ -z ${!var} ]; then
-			error_message=${required_vars_err_messages[$index]}
-			echo "$0: error: $error_message" 1>&2
-			var_missing=true
-		fi
-	done
-
-	if $var_missing; then
-		echo ""
-		usage
-        exit 1
-	fi
-
-  if [[ -z $INTERFACE_NAME ]]; then
+    if [ -z $INTERFACE_NAME ]; then
       INTERFACE_NAME=$(oc -n openshift-ptp --kubeconfig=$LOCAL_KUBECONFIG exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ls /sys/class/gnss/gnss0/device/net/)
       echo "Discovered interface name: $INTERFACE_NAME"
-  else    
-      echo "Using interface name: $INTERFACE_NAME"
+    fi
   fi
 
   TESTROOT=$(pwd)
@@ -227,8 +216,13 @@ EOF
 
 check_vars
 audit_container > $DATADIR/repo_audit
-verify_env
-collect_data
+if [ $COLLECT_DATA = true ]; then
+  echo "Running Collection"
+  verify_env
+  collect_data
+else
+  echo "Skipping data collection"
+fi
 analyse_data > $TESTJSON
 create_junit
 create_pdf
