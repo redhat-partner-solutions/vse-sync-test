@@ -2,7 +2,7 @@ ifdef::env-github[]
 :important-caption: :heavy_exclamation_mark:
 endif::[]
 
-= time-error-in-locked-mode PHC-to-SYS RAN
+= G.8272 time-error-in-locked-mode PHC-to-SYS RAN
 
 This test focuses on one observation point in this system: the internal path
 from PHC to System Clock (SYS). The purpose of this test is to identify when the time error observed at this point is considered unacceptable for RAN workloads.
