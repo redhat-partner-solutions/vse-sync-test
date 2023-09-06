@@ -1,0 +1,25 @@
+= GNSS protocol version
+
+This test ensures that the protocol version of the GNSS device running in the
+System Under Test (SUT) is exactly the version expected.
+
+== Goal
+
+Verify that the GNSS device in the SUT is using a specific protocol version.
+
+== Scope
+
+* Environment verification
+
+== Out of scope
+
+* _empty_
+
+== Acceptance criteria
+
+1. The GNSS protocol version is exactly the version specified in the test configuration
+
+== Test procedure
+
+1. Gather the GNSS protocol version running in the SUT
+2. Verify the version meets acceptance criteria
