@@ -28,7 +28,7 @@ def main():
     parser = TimeErrorParser()
     plotter = Plotter(parser.y_name, "Time Error (unfiltered)")
     with open_input(args.input) as fid:
-            for parsed in parser.canonical(fid):
+            for parsed in parser.canonical(fid, relative=True):
                 plotter.append(parsed)
     plotter.plot(args.output)
 
