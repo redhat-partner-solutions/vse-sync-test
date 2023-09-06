@@ -17,7 +17,7 @@ from vse_sync_pp.plot import Plotter
 
 def main():
     """Plot data for this test to an image file.
-    
+
     To generate an image file, supply the same input data file(s) and in the same order as they were
     presented to the reference implementation.
     """
@@ -26,7 +26,7 @@ def main():
     aparser.add_argument('input', help="input data file")
     args = aparser.parse_args()
     parser = TimeErrorParser()
-    plotter = Plotter(parser.y_name)
+    plotter = Plotter(parser.y_name, "Time Error (unfiltered)")
     with open_input(args.input) as fid:
             for parsed in parser.canonical(fid):
                 plotter.append(parsed)
