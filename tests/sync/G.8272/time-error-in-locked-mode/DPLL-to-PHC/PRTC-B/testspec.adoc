@@ -2,7 +2,7 @@ ifdef::env-github[]
 :important-caption: :heavy_exclamation_mark:
 endif::[]
 
-=== G.8272 time-error-in-locked-mode DPLL-to-PHC PRTC-B
+= G.8272 time-error-in-locked-mode DPLL-to-PHC PRTC-B
 
 https://www.itu.int/rec/T-REC-G.8272/en[G.8272 Section 6.1] specifies
 requirements on the accuracy of the time output of
@@ -16,31 +16,31 @@ when both the test environment and the System Under Test (SUT) have been
 independently validated. While requirements on their acceptability are not
 defined here, it is noted that they include timestamping accuracy.
 
-==== Goal
+== Goal
 
 Verify that the unfiltered time error introduced between DPLL and PHC under
 normal, locked operating conditions is not greater than 10% of the overall time
 output accuracy requirement for https://www.itu.int/rec/T-REC-G.8272/en[PRTC-B].
 
-==== Scope
+== Scope
 
 * Ignore samples in an initial transient window
 * Verify samples in the test window
 
-==== Out of scope
+== Out of scope
 
 * Independent validation of the test environment
 * Independent validation of the SUT
 * Provision SUT
 
-==== Acceptance criteria
+== Acceptance criteria
 
 1. All samples in the test window have an unfiltered time error
    of less than 10% of overall time output accuracy requirement
 2. The time output is locked for the test window
 3. The test window is at least 1000 seconds long
 
-==== Test procedure
+== Test procedure
 
 1. Establish normal, locked conditions per
    https://www.itu.int/rec/T-REC-G.8272/en[G.8272 Section 6.1]
