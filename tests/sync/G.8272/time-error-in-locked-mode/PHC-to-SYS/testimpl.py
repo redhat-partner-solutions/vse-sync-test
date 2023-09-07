@@ -35,6 +35,8 @@ def refimpl(filename, encoding='utf-8'):
     return {
         'result': analyzer.result,
         'reason': analyzer.reason,
+        'timestamp': analyzer.timestamp,
+        'duration': analyzer.duration,
         'analysis': analyzer.analysis,
     }
 
