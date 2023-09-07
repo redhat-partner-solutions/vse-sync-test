@@ -54,9 +54,11 @@ The JSON value must be a JSON object:
 ** a string providing any qualification of the result; or,
 ** `null` (indicating no qualification of the result)
 * optionally including a pair at key `"timestamp"` with a value of:
-** a string capturing when the test was started (see <<timestamp>>)
+** a string capturing when the test was started (see <<timestamp>>); or,
+** `null` (indicating no timestamp)
 * optionally including a pair at key `"duration"` with a value of:
-** a non-negative number, the duration of the test in seconds
+** a non-negative number, the duration of the test in seconds; or,
+** `null` (indicating no duration)
 * optionally including a pair at key `"analysis"` with a value of:
 ** an object providing any relevant structured summarization of the result
 
