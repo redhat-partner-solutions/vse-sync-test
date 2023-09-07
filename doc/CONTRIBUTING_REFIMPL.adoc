@@ -1,6 +1,6 @@
 = Contributing Reference Implementations
 
-This documents covers contributing a reference implementation for a test case.
+This document covers contributing a reference implementation for a test case.
 
 (Skip to the end to for <<an-example>>.)
 
@@ -46,17 +46,39 @@ An example of a reference implementation with its configuration file:
 A reference implementation must print its results as a line of JSON-encoded text.
 The JSON value must be a JSON object:
 
-* including a pair at key "result" with a value of:
+* including a pair at key `"result"` with a value of:
 ** JSON `true` on test success;
 ** JSON `false` on test failure; or,
-** JSON string "error" indicating failure to produce a result
-* including a pair at key "reason" with a value of:
+** JSON string `"error"` indicating failure to produce a result
+* including a pair at key `"reason"` with a value of:
 ** a JSON string, providing any qualification of the result; or,
 ** JSON `null`
-* optionally including a pair at key "analysis" with a value of:
+* optionally including a pair at key `"timestamp"` with a value of:
+** a JSON string, capturing when the test was started (see <<timestamp>>)
+* optionally including a pair at key `"duration"` with a value of:
+** a non-negative JSON number, the duration of the test in seconds
+* optionally including a pair at key `"analysis"` with a value of:
 ** a JSON object, providing any relevant structured summarization of the result
 
 All other key/value pairs are reserved for future use.
+
+[[timestamp]]
+=== timestamp values
+
+This section prescribes the format of a timestamp string, in order to promote
+consistency and avoid ambiguity.
+
+A timestamp string is an
+https://www.iso.org/iso-8601-date-and-time-format.html[ISO 8601 date-time string]
+representing a
+https://datatracker.ietf.org/doc/html/rfc3339#section-4.1[UTC time value]
+as per the
+https://datatracker.ietf.org/doc/html/rfc3339#section-5.6[RFC 3339 date-time ABNF rule].
+
+For example, using the https://www.gnu.org/software/coreutils/date[GNU date command]:
+
+    $ date -u -Iseconds
+    2023-09-07T08:05:57+00:00
 
 == Manage dependencies
 
