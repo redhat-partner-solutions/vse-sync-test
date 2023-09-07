@@ -47,18 +47,18 @@ A reference implementation must print its results as a line of JSON-encoded text
 The JSON value must be a JSON object:
 
 * including a pair at key `"result"` with a value of:
-** JSON `true` on test success;
-** JSON `false` on test failure; or,
-** JSON string `"error"` indicating failure to produce a result
+** `true` on test success;
+** `false` on test failure; or,
+** `"error"` indicating failure to produce a result
 * including a pair at key `"reason"` with a value of:
-** a JSON string, providing any qualification of the result; or,
-** JSON `null`
+** a string providing any qualification of the result; or,
+** `null` (indicating no qualification of the result)
 * optionally including a pair at key `"timestamp"` with a value of:
-** a JSON string, capturing when the test was started (see <<timestamp>>)
+** a string capturing when the test was started (see <<timestamp>>)
 * optionally including a pair at key `"duration"` with a value of:
-** a non-negative JSON number, the duration of the test in seconds
+** a non-negative number, the duration of the test in seconds
 * optionally including a pair at key `"analysis"` with a value of:
-** a JSON object, providing any relevant structured summarization of the result
+** an object providing any relevant structured summarization of the result
 
 All other key/value pairs are reserved for future use.
 
