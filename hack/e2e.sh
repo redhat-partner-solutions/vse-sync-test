@@ -84,11 +84,16 @@ check_vars() {
   ARTEFACTDIR=$OUTPUTDIR/artefacts # place mid pipeline files here
   PLOTDIR=$ARTEFACTDIR/plots
   REPORTARTEFACTDIR=$ARTEFACTDIR/report
+  LOGARTEFACTDIR=$ARTEFACTDIR/log
 
   mkdir -p $DATADIR
   mkdir -p $ARTEFACTDIR
   mkdir -p $REPORTARTEFACTDIR
+  mkdir -p $LOGARTEFACTDIR
   mkdir -p $PLOTDIR
+
+  COLLECTED_DATA_FILE=$DATADIR/collected.log
+  PTP_DAEMON_LOGFILE=$DATADIR/linuxptp-daemon-container.log
 
   GNSS_DEMUXED_PATH=$ARTEFACTDIR/gnss-terror.demuxed
   DPLL_DEMUXED_PATH=$ARTEFACTDIR/dpll-terror.demuxed
@@ -148,17 +153,17 @@ verify_env(){
 collect_data() {
   pushd "$COLLECTORPATH" >/dev/null 2>&1
   echo "Collecting $DURATION of data. Please wait..."
-  go run main.go collect --interface="$INTERFACE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --output="$DATADIR/collected.log" --use-analyser-format --duration=$DURATION
-  go run main.go logs -k="$LOCAL_KUBECONFIG" -o="$DATADIR" --since="$DURATION"
+  go run main.go collect --interface="$INTERFACE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --output="$COLLECTED_DATA_FILE" --use-analyser-format --duration=$DURATION
+  go run hack/logs.go -k="$LOCAL_KUBECONFIG" -o="$PTP_DAEMON_LOGFILE" -t="$LOGARTEFACTDIR" -d="$DURATION";
+  rm -r "$LOGARTEFACTDIR" # there are potentially hundreds of MB of logfiles, we keep only the time-window we are interested in.
   popd >/dev/null 2>&1
 }
 
 analyse_data() {
   pushd "$ANALYSERPATH" >/dev/null 2>&1
-  local PTP_DAEMON_LOGFILE=$(ls -tr1 $DATADIR/linuxptp-daemon-container-* | tail -n 1)
 
-  PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $DATADIR/collected.log 'gnss/time-error' >> $GNSS_DEMUXED_PATH
-  PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $DATADIR/collected.log 'dpll/time-error' >> $DPLL_DEMUXED_PATH
+  PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'gnss/time-error' > $GNSS_DEMUXED_PATH
+  PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'dpll/time-error' > $DPLL_DEMUXED_PATH
 
   cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
 ["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE"]
