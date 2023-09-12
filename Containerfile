@@ -39,7 +39,7 @@ RUN --mount=type=ssh git submodule update --init --recursive
 WORKDIR ${VSE_DIR}
 RUN --mount=type=ssh git clone git@github.com:redhat-partner-solutions/vse-sync-collection-tools.git
 WORKDIR ${VSE_DIR}/vse-sync-collection-tools
-RUN go build
+RUN go mod vendor
 
 WORKDIR ${VSE_DIR}
 CMD ["./vse-sync-test/hack/e2e.sh", "-k", "/usr/vse/kubeconfig", "-d", "2000s"]
