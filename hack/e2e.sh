@@ -84,6 +84,7 @@ check_vars() {
   COLLECTORPATH=$TESTROOT/vse-sync-collection-tools
   ANALYSERPATH=$TESTROOT/vse-sync-test
   REPORTGENPATH=$TESTROOT/vse-sync-test-report
+  REPORTPRIVSUTGENPATH=$TESTROOT/vse-sync-sut
   TDPATH=$TESTROOT/testdrive/src
   PPPATH=$ANALYSERPATH/vse-sync-pp/src
 
@@ -201,6 +202,7 @@ create_junit() {
 create_pdf() {
   pushd "$REPORTGENPATH" >/dev/null 2>&1
   local config=$ARTEFACTDIR/reportgen_config.json
+
   cat << EOF >> $config
 {
     "title": "Synchronization Test Report",
@@ -221,8 +223,12 @@ create_pdf() {
 }
 EOF
   env PYTHONPATH=$TDPATH make CONFIG=$config JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR BUILDER=native GIT_HASH=$(echo "$SYNCTESTCOMMIT" | head -c 8) clean
-  env PYTHONPATH=$TDPATH make CONFIG=$config ATTRIBUTES="allow-uri-read" JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR BUILDER=native GIT_HASH=$(echo "$SYNCTESTCOMMIT" | head -c 8) all
-
+  if [ -d "$REPORTPRIVSUTGENPATH" ];
+  then
+      env PYTHONPATH=$TDPATH make CONFIG=$config ATTRIBUTES="allow-uri-read" JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR BUILDER=native GIT_HASH=$(echo "$SYNCTESTCOMMIT" | head -c 8) ADOC=$REPORTPRIVSUTGENPATH/doc/setup.adoc PNG=$REPORTPRIVSUTGENPATH/doc/testreport.png all
+  else
+      env PYTHONPATH=$TDPATH make CONFIG=$config ATTRIBUTES="allow-uri-read" JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR BUILDER=native GIT_HASH=$(echo "$SYNCTESTCOMMIT" | head -c 8)  all
+  fi
   mv $REPORTARTEFACTDIR/test-report.pdf $OUTPUTDIR
   popd >/dev/null 2>&1
 }
