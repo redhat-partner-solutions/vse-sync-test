@@ -61,16 +61,16 @@ done
 
 check_vars() {
   if [ $COLLECT_DATA = true ]; then
-    if [ "$(oc get ns $NAMESPACE -o jsonpath='{.status.phase}')" != "Active" ]; then
-      echo "$0: error: $NAMESPACE is not active. Check the status of ptp operator namespace." 1>&2
-      exit 1
-    fi
-
     oc project $NAMESPACE # set namespace for data collection
 
     if [ -z $LOCAL_KUBECONFIG ]; then
       echo "$0: error: LOCAL_KUBECONFIG is invalid or not given. Use the -k option to provide path to kubeconfig file." 1>&2
       usage
+      exit 1
+    fi
+    
+    if [ "$(oc --kubeconfig=$LOCAL_KUBECONFIG get ns $NAMESPACE -o jsonpath='{.status.phase}')" != "Active" ]; then
+      echo "$0: error: $NAMESPACE is not active. Check the status of ptp operator namespace." 1>&2
       exit 1
     fi
 
