@@ -152,7 +152,7 @@ verify_env(){
   pushd "$COLLECTORPATH" >/dev/null 2>&1
   echo "Verifying test env. Please wait..."
   dt=$(date --rfc-3339='seconds' -u)
-  local junit_template=$(echo ".[].data + { \"timestamp\": \"$dt\", "time": 0}")
+  local junit_template=$(echo ".[].data + { \"timestamp\": \"$dt\", "duration": 0}")
   go run main.go env verify --interface="$INTERFACE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format > $ENVJSONRAW
   cat $ENVJSONRAW | jq -s -c "$junit_template" > $ENVJSON
   popd >/dev/null 2>&1
@@ -221,7 +221,7 @@ create_pdf() {
 }
 EOF
   env PYTHONPATH=$TDPATH make CONFIG=$config JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR BUILDER=native GIT_HASH=$(echo "$SYNCTESTCOMMIT" | head -c 8) clean
-  env PYTHONPATH=$TDPATH make CONFIG=$config JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR BUILDER=native GIT_HASH=$(echo "$SYNCTESTCOMMIT" | head -c 8) all
+  env PYTHONPATH=$TDPATH make CONFIG=$config ATTRIBUTES="allow-uri-read" JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR BUILDER=native GIT_HASH=$(echo "$SYNCTESTCOMMIT" | head -c 8) all
 
   mv $REPORTARTEFACTDIR/test-report.pdf $OUTPUTDIR
   popd >/dev/null 2>&1
