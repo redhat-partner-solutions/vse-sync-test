@@ -2,38 +2,49 @@
 
 ### SPDX-License-Identifier: GPL-2.0-only
 
-"""Plot data for test:
+"""Plot data for tests under:
 
 sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL
+
+Use a symbolic link to specify this as the plotter for a test.
 """
 
+import sys
 from argparse import ArgumentParser
-from os.path import basename
-import json
 
-from vse_sync_pp.common import open_input
+from vse_sync_pp.common import (
+    open_input,
+    print_loj,
+)
+
 from vse_sync_pp.parsers.dpll import TimeErrorParser
 from vse_sync_pp.plot import Plotter
 
 def main():
-    """Plot data for this test to an image file.
+    """Plot test data and print files output as JSON to stdout
 
-    To generate an image file, supply the same input data file(s) and in the same order as they were
-    presented to the reference implementation.
+    To generate an image file, supply the output image prefix (path and stem)
+    followed by exactly the same command line args as supplied to the reference
+    implementation.
     """
     aparser = ArgumentParser(description=main.__doc__)
-    aparser.add_argument('output', help="output image file")
-    aparser.add_argument('input', help="input data file")
+    aparser.add_argument('prefix', help="output image prefix")
+    aparser.add_argument('input')
     args = aparser.parse_args()
     parser = TimeErrorParser()
     plotter = Plotter(parser.y_name, "Time Error (unfiltered)")
     with open_input(args.input) as fid:
-            for parsed in parser.canonical(fid, relative=True):
-                plotter.append(parsed)
-    output_filename = f"{args.output}.png".replace("_testimpl", "")
-    title = basename(args.output).replace("-", " ").replace("_testimpl", "").title()
-    plotter.plot(output_filename)
-    print(json.dumps([{"title": title, "path": output_filename}]))
+        for parsed in parser.canonical(fid, relative=True):
+            plotter.append(parsed)
+    output = f'{args.prefix}.png'
+    plotter.plot(output)
+    item = {
+        'path': output,
+        'title': "1PPS-to-DPLL Time Error (unfiltered)",
+    }
+    # Python exits with error code 1 on EPIPE
+    if not print_loj([item]):
+        sys.exit(1)
 
 if __name__ == '__main__':
     main()

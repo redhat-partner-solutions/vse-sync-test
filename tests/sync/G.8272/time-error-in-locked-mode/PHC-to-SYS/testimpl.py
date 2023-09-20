@@ -9,12 +9,16 @@ sync/G.8272/time-error-in-locked-mode/PHC-to-SYS
 Use a symbolic link to specify this as the reference implementation for a test.
 """
 
+import sys
 from argparse import ArgumentParser
-import json
 from os.path import join as joinpath
 from os.path import dirname
 
-from vse_sync_pp.common import JsonEncoder
+from vse_sync_pp.common import (
+    open_input,
+    print_loj,
+)
+
 from vse_sync_pp.parsers.phc2sys import TimeErrorParser
 from vse_sync_pp.analyzers.phc2sys import TimeErrorAnalyzer
 from vse_sync_pp.analyzers.analyzer import Config
@@ -30,7 +34,7 @@ def refimpl(filename, encoding='utf-8'):
     """
     parser = TimeErrorParser()
     analyzer = TimeErrorAnalyzer(Config.from_yaml(CONFIG))
-    with open(filename, encoding=encoding) as fid:
+    with open_input(filename, encoding=encoding) as fid:
         analyzer.collect(*parser.parse(fid))
     return {
         'result': analyzer.result,
@@ -46,7 +50,9 @@ def main():
     aparser.add_argument('input', help="log file to analyze")
     args = aparser.parse_args()
     output = refimpl(args.input)
-    print(json.dumps(output, cls=JsonEncoder))
+    # Python exits with error code 1 on EPIPE
+    if not print_loj(output):
+        sys.exit(1)
 
 if __name__ == '__main__':
     main()

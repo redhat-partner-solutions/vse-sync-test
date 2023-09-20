@@ -54,7 +54,8 @@ The JSON value must be a JSON object:
 ** a string providing any qualification of the result; or,
 ** `null` (indicating no qualification of the result)
 * optionally including a pair at key `"timestamp"` with a value of:
-** a string capturing when the test was started (see <<timestamp>>); or,
+** a string capturing when the test was started (see <<timestamp>>);
+** a non-negative number, representing a relative timestamp; or,
 ** `null` (indicating no timestamp)
 * optionally including a pair at key `"duration"` with a value of:
 ** a non-negative number, the duration of the test in seconds; or,
@@ -81,6 +82,36 @@ For example, using the https://www.gnu.org/software/coreutils/date[GNU date comm
 
     $ date -u -Iseconds
     2023-09-07T08:05:57+00:00
+
+== Plotting test data
+
+A reference implementation may be accompanied by a script to plot test data.
+If supplied, the script must:
+
+* Be in the same directory as the corresponding reference implementation
+** (It is ok for the script to be a symbolic link to a shared implementation.)
+* Have filename `plot.py`
+* Be appropriately documented
+* Be runnable from a shell/the command line
+* (If needed) use the same test input parameters as the reference implementation
+  (taken from an associated configuration file, see <<test-input-params>>)
+* Take an output filename `prefix` as its first command line argument
+* Take extra command line arguments which exactly match the sequence of
+  command line arguments supplied to the reference implementation
+* Print files output as JSON-encoded text to stdout
+  (see <<image-files-output>>)
+* Exit with code non-zero on error, zero otherwise
+
+[[image-files-output]]
+== Image files output
+
+A script for plotting test data must print its results as a line of JSON-encoded
+text. The JSON value must be a JSON array:
+
+* including an array item for each file output
+* with each array item being an object with pairs for:
+** `path`, the path to the image file output
+** `title`, a string title for the image
 
 == Manage dependencies
 

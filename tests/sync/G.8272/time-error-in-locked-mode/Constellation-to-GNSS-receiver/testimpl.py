@@ -9,6 +9,7 @@ sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver
 Use a symbolic link to specify this as the reference implementation for a test.
 """
 
+import sys
 from argparse import ArgumentParser
 from os.path import join as joinpath
 from os.path import dirname

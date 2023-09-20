@@ -9,6 +9,7 @@ sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL
 Use a symbolic link to specify this as the reference implementation for a test.
 """
 
+import sys
 from argparse import ArgumentParser
 from os.path import join as joinpath
 from os.path import dirname
@@ -28,7 +29,7 @@ def refimpl(filename, encoding='utf-8'):
     """A reference implementation for tests under:
 
     sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL
-    
+
     Input `filename` accepted MUST be in canonical format.
     Return a dict with test result, reason, analysis of logs in `filename`.
     """
