@@ -122,6 +122,8 @@ check_vars() {
   BASEURL_ENV_IDS=https://github.com/redhat-partner-solutions/vse-sync-test/tree/main/
   BASEURL_TEST_IDS=https://docs.engineering.redhat.com/vse-sync-test/
   BASEURL_SPECS=https://github.com/redhat-partner-solutions/vse-sync-test/blob/$SYNCTESTCOMMIT/
+
+  FINALREPORTPATH=${OUTPUTDIR}"/test_report_"$(date -u +'%Y%m%dT%H%M%SZ')"_"$(echo "$SYNCTESTCOMMIT" | head -c 8)".pdf"
 }
 
 audit_repo() {
@@ -229,7 +231,7 @@ EOF
   else
       env PYTHONPATH=$TDPATH make CONFIG=$config ATTRIBUTES="allow-uri-read" JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR BUILDER=native GIT_HASH=$(echo "$SYNCTESTCOMMIT" | head -c 8)  all
   fi
-  mv $REPORTARTEFACTDIR/test-report.pdf $OUTPUTDIR
+  mv $REPORTARTEFACTDIR/test-report.pdf $FINALREPORTPATH
   popd >/dev/null 2>&1
 }
 
