@@ -9,72 +9,6 @@
 set -e
 set -o pipefail
 
-# defaults
-DURATION=2000s
-COLLECT_DATA=true
-NAMESPACE=openshift-ptp
-
-usage() {
-    cat - <<EOF
-Usage: $(basename "$0") -k KUBECONFIG [-i INTERFACE_NAME] [-d DURATION]
-
-Arguments:
-    -k: path to the kubeconfig to be used
-
-Options:
-    -i: name of the interface to gather data about
-    -d: how many seconds to run data collection
-    -s: skip data collection and run analysis only
-
-(Skipping data collection requires a pre-existing dataset in `data/collected/`)
-
-Example Usage:
-    $(basename "$0") -k ~/kubeconfig
-EOF
-}
-
-# Parse arguments and options
-while [[ $1 == -* ]]; do
-    case "$1" in
-        -h|--help|-\?)
-            usage && exit 0
-        ;;
-        -k) (($# <= 1)) && usage && exit 1
-            LOCAL_KUBECONFIG=$2; shift 2
-        ;;
-        -i) (($# <= 1)) && usage && exit 1
-            INTERFACE_NAME=$2; shift 2
-        ;;
-        -d) (($# <= 1)) && usage && exit 1
-            DURATION=$2; shift 2
-        ;;
-        -s) COLLECT_DATA=false
-            shift
-        ;;
-        --) shift
-            break
-        ;;
-        -*) usage && exit 1
-        ;;
-    esac
-done
-
-if [ $COLLECT_DATA = true ]; then
-
-    [ -z $LOCAL_KUBECONFIG ] && usage && exit 1
-
-    if [ "$(oc --kubeconfig=$LOCAL_KUBECONFIG get ns $NAMESPACE -o jsonpath='{.status.phase}')" != "Active" ]; then
-        echo "$0: error: $NAMESPACE is not active. Check the status of ptp operator namespace." 1>&2
-        exit 1
-    fi
-    oc project --kubeconfig=$LOCAL_KUBECONFIG $NAMESPACE # set namespace for data collection
-
-    if [ -z $INTERFACE_NAME ]; then
-        INTERFACE_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ls /sys/class/gnss/gnss0/device/net/)
-        echo "Discovered interface name: $INTERFACE_NAME"
-    fi
-fi
-
 TESTROOT=$(pwd)
 COLLECTORPATH=$TESTROOT/vse-sync-collection-tools
 ANALYSERPATH=$TESTROOT/vse-sync-test
@@ -90,12 +24,6 @@ PLOTDIR=$ARTEFACTDIR/plots
 REPORTARTEFACTDIR=$ARTEFACTDIR/report
 LOGARTEFACTDIR=$ARTEFACTDIR/log
 
-mkdir -p $DATADIR
-mkdir -p $ARTEFACTDIR
-mkdir -p $REPORTARTEFACTDIR
-mkdir -p $LOGARTEFACTDIR
-mkdir -p $PLOTDIR
-
 COLLECTED_DATA_FILE=$DATADIR/collected.log
 PTP_DAEMON_LOGFILE=$DATADIR/linuxptp-daemon-container.log
 
@@ -109,6 +37,63 @@ TESTJSON="$ARTEFACTDIR/test.json"
 ENVJUNIT="$ARTEFACTDIR/env.junit"
 TESTJUNIT="$ARTEFACTDIR/test.junit"
 FULLJUNIT="$OUTPUTDIR/sync_test_report.xml"
+
+# defaults
+DURATION=2000s
+NAMESPACE=openshift-ptp
+
+usage() {
+    cat - <<EOF
+Usage: $(basename "$0") [-i INTERFACE_NAME] [-d DURATION] ?kubeconfig?
+
+Arguments:
+    kubeconfig: path to the kubeconfig to be used
+
+Options:
+    -i: name of the interface to gather data about
+    -d: how many seconds to run data collection
+
+If kubeconfig is not supplied then data collection is skipped:
+a pre-existing dataset must be available in $DATADIR
+
+Example usage:
+    $(basename "$0") ~/kubeconfig
+EOF
+}
+
+# Parse arguments and options
+while getopts ':i:d:' option; do
+    case "$option" in
+        i) INTERFACE_NAME="$OPTARG" ;;
+        d) DURATION="$OPTARG" ;;
+        \?) usage >&2 && exit 1 ;;
+        :) usage >&2 && exit 1 ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+LOCAL_KUBECONFIG="$1"
+
+if [ ! -z "$LOCAL_KUBECONFIG" ]; then
+
+    if [ "$(oc --kubeconfig=$LOCAL_KUBECONFIG get ns $NAMESPACE -o jsonpath='{.status.phase}')" != "Active" ]; then
+        echo "$0: error: $NAMESPACE is not active. Check the status of ptp operator namespace." 1>&2
+        exit 1
+    fi
+
+    oc project --kubeconfig=$LOCAL_KUBECONFIG $NAMESPACE # set namespace for data collection
+
+    if [ -z $INTERFACE_NAME ]; then
+        INTERFACE_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ls /sys/class/gnss/gnss0/device/net/)
+        echo "Discovered interface name: $INTERFACE_NAME"
+    fi
+fi
+
+mkdir -p $DATADIR
+mkdir -p $ARTEFACTDIR
+mkdir -p $REPORTARTEFACTDIR
+mkdir -p $LOGARTEFACTDIR
+mkdir -p $PLOTDIR
 
 pushd "$ANALYSERPATH" >/dev/null 2>&1
 SYNCTESTCOMMIT="$(git show -s --format=%H HEAD)"
@@ -242,7 +227,7 @@ EOF
 }
 
 audit_container > $DATADIR/repo_audit
-if [ $COLLECT_DATA = true ]; then
+if [ ! -z "$LOCAL_KUBECONFIG" ]; then
     echo "Running Collection"
     verify_env
     collect_data
