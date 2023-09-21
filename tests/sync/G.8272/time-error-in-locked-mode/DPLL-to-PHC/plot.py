@@ -28,7 +28,7 @@ def main():
     implementation.
     """
     aparser = ArgumentParser(description=main.__doc__)
-    aparser.add_argument('output', help="output image prefix")
+    aparser.add_argument('prefix', help="output image prefix")
     aparser.add_argument('input')
     args = aparser.parse_args()
     parser = TimeErrorParser()
