@@ -6,7 +6,7 @@
 
 sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver
 
-Use a symbolic link to specify this as the plotter for a test.
+Use a symbolic link to specify this file as the plotter for a test.
 """
 
 import sys
