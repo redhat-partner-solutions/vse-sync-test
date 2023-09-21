@@ -6,7 +6,7 @@
 
 sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC
 
-Use a symbolic link to specify this as the reference implementation for a test.
+Use a symbolic link to specify this file as the reference implementation for a test.
 """
 
 import sys
