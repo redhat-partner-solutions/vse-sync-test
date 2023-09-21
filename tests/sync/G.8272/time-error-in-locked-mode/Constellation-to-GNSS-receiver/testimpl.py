@@ -6,9 +6,10 @@
 
 sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver
 
-Use a symbolic link to specify this as the reference implementation for a test.
+Use a symbolic link to specify this file as the reference implementation for a test.
 """
 
+import sys
 from argparse import ArgumentParser
 from os.path import join as joinpath
 from os.path import dirname
@@ -30,7 +31,7 @@ def refimpl(filename, encoding='utf-8'):
     sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver
 
     Input `filename` accepted MUST be in canonical format.
-    Return a dict with test result, reason, analysis of logs in `filename`.
+    Return a dict with test result, reason, timestamp, duration, and analysis of logs in `filename`.
     """
     parser = TimeErrorParser()
     analyzer = TimeErrorAnalyzer(Config.from_yaml(CONFIG))

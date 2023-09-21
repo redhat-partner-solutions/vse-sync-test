@@ -54,7 +54,8 @@ The JSON value must be a JSON object:
 ** a string providing any qualification of the result; or,
 ** `null` (indicating no qualification of the result)
 * optionally including a pair at key `"timestamp"` with a value of:
-** a string capturing when the test was started (see <<timestamp>>); or,
+** a string capturing when the test was started (see <<timestamp>>);
+** a non-negative number, representing a relative timestamp in seconds; or,
 ** `null` (indicating no timestamp)
 * optionally including a pair at key `"duration"` with a value of:
 ** a non-negative number, the duration of the test in seconds; or,
@@ -82,6 +83,36 @@ For example, using the https://www.gnu.org/software/coreutils/date[GNU date comm
     $ date -u -Iseconds
     2023-09-07T08:05:57+00:00
 
+== Plotting test data
+
+A reference implementation may be accompanied by a script to plot test data.
+If supplied, the script must:
+
+* Be in the same directory as the corresponding reference implementation
+** (It is ok for the script to be a symbolic link to a shared implementation.)
+* Have filename `plot.py`
+* Be appropriately documented
+* Be runnable from a shell/the command line
+* (If needed) use the same test input parameters as the reference implementation
+  (taken from an associated configuration file, see <<test-input-params>>)
+* Take an output filename `prefix` as its first command line argument
+* Take extra command line arguments which exactly match the sequence of
+  command line arguments supplied to the reference implementation
+* Print files output as JSON-encoded text to stdout
+  (see <<image-files-output>>)
+* Exit with code non-zero on error, zero otherwise
+
+[[image-files-output]]
+== Image files output
+
+A script for plotting test data must print its results as a line of JSON-encoded
+text. The JSON value must be a JSON array:
+
+* including an array item for each file output
+* with each array item being an object with pairs for:
+** `path`, the path to the image file output
+** `title`, a string title for the image
+
 == Manage dependencies
 
 git submodules are used to manage the dependencies this repository has on other
@@ -95,7 +126,7 @@ $ git submodule update --init --recursive
 
 == Publishing a reference implementation
 
-A reference implememtation is considered (publicly) published when the
+A reference implementation is considered (publicly) published when the
 following conditions become true for the first time:
 
 * The corresponding test specification is published
@@ -125,9 +156,11 @@ implementations must satisfy the following:
 * Each reference implementation must have an associated configuration file
   `config.yaml` in the same directory defining test input parameters
 * Each reference implementation must provide example data files demonstrating
-  test success
+  test success (`"result"`: `true`)
 * Each reference implementation must provide example data files demonstrating
-  test failure
+  test failure (`"result"`: `false`)
+* Optionally, a reference implementation can provide example data files demonstrating
+  error denoting failure to produce a result (`"result"`: `"error"`)
 
 Each reference implementation should ideally follow consistent practices with
 existing similar reference implementations (by language, type of test, ...)
@@ -144,7 +177,7 @@ This reference implementation takes lines of JSON data as input. This is an
 example of data produced by a collector such as
 https://github.com/redhat-partner-solutions/vse-sync-collection-tools[vse-sync-collection-tools].
 Alternatively your reference implementation could use system log files, for
-example those produced by `linux-ptp-daemon`.
+example those produced by `linux-ptp-daemon-container`.
 
 (In all cases, it is the reference implementation's responsibility to ensure it
 parses and handles its input data correctly.)
@@ -161,7 +194,7 @@ The following demonstrates test success with this reference implementation:
 $ cd tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A
 $ PPATH=../../../../../../vse-sync-pp/src
 $ PYTHONPATH=$PPATH python3 testimpl.py  ../examples/dpll-PRTCA-accept.dat
-{"result": true, "reason": null, "analysis": {"duration": 2458.27, "terror": {"units": "ns", "min": -5.14, "max": 5.58, "range": 10.72, "mean": -0.001, "stddev": 2.453, "variance": 6.016}}}
+{"result": true, "reason": null, "timestamp": 1877172.99, "duration": 2458.27, "analysis": {"terror": {"units": "ns", "min": -5.14, "max": 5.58, "range": 10.72, "mean": -0.001, "stddev": 2.453, "variance": 6.016}}}
 
 The following demonstrates test failure with the same reference implementation
 but different data:
@@ -170,4 +203,4 @@ but different data:
 $ cd tests/sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A
 $ PPATH=../../../../../../vse-sync-pp/src
 $ PYTHONPATH=$PPATH python3 testimpl.py  ../examples/dpll-reject.dat
-{"result": false, "reason": "short test duration", "analysis": {"duration": 475.7922967, "terror": {"units": "ns", "min": -3.49, "max": 5.84, "range": 9.33, "mean": 0.03, "stddev": 2.342, "variance": 5.486}}}
+{"result": false, "reason": "short test duration", "timestamp": "2023-06-21T16:19:51+00:00", "duration": 475.7922967, "analysis": {"terror": {"units": "ns", "min": -3.49, "max": 5.84, "range": 9.33, "mean": 0.03, "stddev": 2.342, "variance": 5.486}}}
