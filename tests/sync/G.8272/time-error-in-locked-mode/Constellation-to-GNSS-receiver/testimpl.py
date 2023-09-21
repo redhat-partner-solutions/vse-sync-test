@@ -31,7 +31,7 @@ def refimpl(filename, encoding='utf-8'):
     sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver
 
     Input `filename` accepted MUST be in canonical format.
-    Return a dict with test result, reason, analysis of logs in `filename`.
+    Return a dict with test result, reason, timestamp, duration, and analysis of logs in `filename`.
     """
     parser = TimeErrorParser()
     analyzer = TimeErrorAnalyzer(Config.from_yaml(CONFIG))
