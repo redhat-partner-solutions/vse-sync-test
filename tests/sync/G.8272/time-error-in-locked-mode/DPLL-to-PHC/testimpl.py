@@ -30,7 +30,7 @@ def refimpl(filename, encoding='utf-8'):
 
     sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC
 
-    Return a dict with test result, reason, analysis of logs in `filename`.
+    Return a dict with test result, reason, timestamp, duration, and analysis of logs in `filename`.
     """
     parser = TimeErrorParser()
     analyzer = TimeErrorAnalyzer(Config.from_yaml(CONFIG))
