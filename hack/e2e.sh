@@ -177,14 +177,14 @@ EOF
 
 create_junit() {
     cat $ENVJSON | \
-        env PYTHONPATH=$TDPATH python3 -m testdrive.junit --baseurl-ids="$BASEURL_ENV_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "Environment" - \
+        env PYTHONPATH=$TDPATH python3 -m testdrive.junit.create --baseurl-ids="$BASEURL_ENV_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "Environment" - \
         > $ENVJUNIT
 
     cat $TESTJSON | \
-        env PYTHONPATH=$TDPATH python3 -m testdrive.junit --baseurl-ids="$BASEURL_TEST_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "T-GM Tests" - \
+        env PYTHONPATH=$TDPATH python3 -m testdrive.junit.create --baseurl-ids="$BASEURL_TEST_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "T-GM Tests" - \
         > $TESTJUNIT
 
-    junitparser merge $ARTEFACTDIR/*.junit $FULLJUNIT
+    env PYTHONPATH=$TDPATH python3 -m testdrive.junit.merge --prettify $ARTEFACTDIR/*.junit > $FULLJUNIT
 }
 
 create_pdf() {
