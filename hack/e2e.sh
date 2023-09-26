@@ -29,6 +29,7 @@ PTP_DAEMON_LOGFILE=$DATADIR/linuxptp-daemon-container.log
 
 GNSS_DEMUXED_PATH=$ARTEFACTDIR/gnss-terror.demuxed
 DPLL_DEMUXED_PATH=$ARTEFACTDIR/dpll-terror.demuxed
+PHC_DEMUXED_PATH=$ARTEFACTDIR/phc-class.demuxed
 
 ENVJSONRAW="$ARTEFACTDIR/env.json.raw"
 ENVJSON="$DATADIR/env.json"
@@ -160,6 +161,7 @@ analyse_data() {
 
     PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'gnss/time-error' > $GNSS_DEMUXED_PATH
     PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'dpll/time-error' > $DPLL_DEMUXED_PATH
+    PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'phc/gm-settings' > $PHC_DEMUXED_PATH
 
     cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
 ["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE"]
@@ -169,6 +171,7 @@ analyse_data() {
 ["sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-B/testimpl.py", "$GNSS_DEMUXED_PATH"]
 ["sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-A/testimpl.py", "$DPLL_DEMUXED_PATH"]
 ["sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL/PRTC-B/testimpl.py", "$DPLL_DEMUXED_PATH"]
+["sync/G.8272/phc/state-transitions/testimpl.py", "$PHC_DEMUXED_PATH"]
 EOF
     env PYTHONPATH=$TDPATH:$PPPATH python3 -m testdrive.run --basedir="$ANALYSERPATH/tests" --imagedir="$PLOTDIR" "$BASEURL_TEST_IDS" $ARTEFACTDIR/testdrive_config.json
 
