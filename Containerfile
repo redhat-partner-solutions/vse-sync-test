@@ -42,4 +42,4 @@ WORKDIR ${VSE_DIR}/vse-sync-collection-tools
 RUN go mod vendor
 
 WORKDIR ${VSE_DIR}
-CMD ["./vse-sync-test/hack/e2e.sh", "-k", "/usr/vse/kubeconfig", "-d", "2000s"]
+CMD ["./vse-sync-test/hack/e2e.sh", "-d", "2000s", "/usr/vse/kubeconfig"]
