@@ -9,12 +9,9 @@ sync/G.8272/phc/state-transitions
 
 import sys
 from argparse import ArgumentParser
-import json
 
-from vse_sync_pp.common import (
-    open_input,
-    print_loj,
-)
+from testimpl import refimpl
+from vse_sync_pp.common import print_loj
 
 from vse_sync_pp.heatmap import Heatmap
 
@@ -50,8 +47,9 @@ def main():
     heatmap = Heatmap(STATE_NAMES, STATE_NAMES, 'PHC State Transitions',
                       unallowed_cells, 'State Transition Count',
                       'To', 'From')
-    with open_input(args.input) as fid:
-        data = json.load(fid)
+
+    # heatmap input - analyzer output
+    data = refimpl(args.input)
 
     heatmap_data = []
     clock_class_count = data['analysis']['clock_class_count']
