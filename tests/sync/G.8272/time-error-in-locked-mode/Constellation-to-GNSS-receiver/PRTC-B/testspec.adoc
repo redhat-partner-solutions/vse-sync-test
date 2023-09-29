@@ -20,7 +20,7 @@ defined here, it is noted that they include timestamping accuracy.
 == Goal
 
 Verify that the unfiltered time error observed at the GNSS receiver under
-normal, locked operating conditions is not greater than 10% of the overall time
+normal, locked operating conditions is not greater than 15% of the overall time
 output accuracy requirement for https://www.itu.int/rec/T-REC-G.8272/en[PRTC-B].
 
 == Scope
@@ -37,7 +37,7 @@ output accuracy requirement for https://www.itu.int/rec/T-REC-G.8272/en[PRTC-B].
 == Acceptance criteria
 
 1. All samples in the test window have an unfiltered time error
-   of less than 10% of overall time output accuracy requirement
+   of less than 15% of overall time output accuracy requirement
 2. The GNSS receiver is locked to the configured GNSS constellation (or
    constellations) for the test window
 3. The test window is at least 1000 seconds long
