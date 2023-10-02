@@ -18,7 +18,7 @@ from vse_sync_pp.common import (
 )
 
 from vse_sync_pp.parsers.gnss import TimeErrorParser
-from vse_sync_pp.plot import Plotter
+from vse_sync_pp.plot import Plotter, Axis, TIMESERIES
 
 def main():
     """Plot test data and print files output as JSON to stdout
@@ -32,7 +32,7 @@ def main():
     aparser.add_argument('input')
     args = aparser.parse_args()
     parser = TimeErrorParser()
-    plotter = Plotter(parser.y_name, "Time Error (unfiltered)")
+    plotter = Plotter(TIMESERIES, Axis("Time Error (unfiltered)", parser.y_name))
     with open_input(args.input) as fid:
         for parsed in parser.canonical(fid, relative=True):
             plotter.append(parsed)
