@@ -2,16 +2,16 @@ ifdef::env-github[]
 :important-caption: :heavy_exclamation_mark:
 endif::[]
 
-= G.8272 wander-TDEV-in-locked-mode DPLL-to-PHC PRTC-A
+= G.8272 wander-TDEV-in-locked-mode Constellation-to-GNSS-receiver PRTC-B
 
-https://www.itu.int/rec/T-REC-G.8272/en[G.8272 Section 6.2 Table 3] specifies
-requirements on the accuracy of the wander-TDEV, i.e., wander
+https://www.itu.int/rec/T-REC-G.8272/en[G.8272 Section 6.2 Table 4] specifies
+requirements on the accuracy of the wander-TDEV, i.e. wander
 expressed in time deviation or TDEV, for
-https://www.itu.int/rec/T-REC-G.8272/en[PRTC-A] under normal, locked conditions. (For
+https://www.itu.int/rec/T-REC-G.8272/en[PRTC-B] under normal, locked conditions. (For
 the sake of simplicity wander-TDEV will be denoted by TDEV from here on.)
-This test focusses on one observation point in this system: the internal path
-from DPLL to PHC. The purpose of this test is to identify when the TDEV
-observed at this point is considered independently unacceptable.
+This test focusses on one observation point in this system: the input received at the GNSS 
+receiver from the configured GNSS constellation. The purpose of this test is to identify when 
+the TDEV observed at this point is considered independently unacceptable.
 
 IMPORTANT: It is critical to note that the results of this test are only valid
 when both the test environment and the System Under Test (SUT) have been
@@ -20,9 +20,9 @@ defined here, it is noted that they include timestamping accuracy.
 
 == Goal
 
-Verify that the TDEV introduced between DPLL and PHC under
-normal, locked operating conditions is not greater than 100% of the overall TDEV requirement for https://www.itu.int/rec/T-REC-G.8272/en[PRTC-A].
-An observation interval of 10000 seconds covers practically all masks. Note that the minimum test window period for TDEV is twelve times the maximum observation interval in accordance with ITU-T recommendation https://www.itu.int/rec/T-REC-G.811-199709-I/en[G.811].
+Verify that the filtered TDEV observed at the GNSS receiver under normal, 
+locked operating conditions is not greater than 10% of the overall TDEV requirement for https://www.itu.int/rec/T-REC-G.8272/en[PRTC-B].
+An observation interval of 10000 seconds covers practically all masks. Note that the minimum measurement period for TDEV is twelve times the maximum observation interval in accordance with ITU-T recommendation https://www.itu.int/rec/T-REC-G.811-199709-I/en[G.811].
 
 == Scope
 
@@ -38,7 +38,7 @@ An observation interval of 10000 seconds covers practically all masks. Note that
 == Acceptance criteria
 
 1. All filtered TDEV samples during each observation interval
-   are less than 100% of overall TDEV accuracy requirement
+   are less than 10% of overall TDEV accuracy requirement
 2. The time output is locked for the test window
 3. The test window is at least 1000 seconds long
 

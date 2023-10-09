@@ -6,9 +6,9 @@ endif::[]
 
 https://www.itu.int/rec/T-REC-G.8272/en[G.8272 Section 6.2 Table 4] specifies
 requirements on the accuracy of the wander-MTIE, i.e. wander
-expressed in time deviation or MTIE, for
+expressed in maximum time interval error or MTIE, for
 https://www.itu.int/rec/T-REC-G.8272/en[PRTC-B] under normal, locked conditions. (For
-the sake of simplicity wander-MTIE will be denoted by TDEV from here on.)
+the sake of simplicity wander-MTIE will be denoted by MTIE from here on.)
 This test focusses on one observation point in this system: the internal path
 from DPLL to PHC. The purpose of this test is to identify when the MTIE
 observed at this point is considered independently unacceptable.
@@ -21,7 +21,8 @@ defined here, it is noted that they include timestamping accuracy.
 == Goal
 
 Verify that the MTIE introduced between DPLL and PHC under
-normal, locked operating conditions is not greater than 10% of the overall MTIE requirement for https://www.itu.int/rec/T-REC-G.8272/en[PRTC-B].
+normal, locked operating conditions is not greater than 100% of the overall MTIE requirement for https://www.itu.int/rec/T-REC-G.8272/en[PRTC-B].
+An observation interval of 10000 seconds covers practically all masks. An observation interval of 10000 seconds covers practically all masks. Note that the test window period for MTIE is equivalent to the maximum observation interval in accordance with ITU-T recommendation https://www.itu.int/rec/T-REC-G.811-199709-I/en[G.811].
 
 == Scope
 
@@ -36,8 +37,8 @@ normal, locked operating conditions is not greater than 10% of the overall MTIE 
 
 == Acceptance criteria
 
-1. All samples in the test window have a filtered MTIE
-   of less than 10% of overall time output accuracy requirement
+1. All filtered MTIE samples during each observation interval
+   are less than 100% of overall MTIE accuracy requirement
 2. The time output is locked for the test window
 3. The test window is at least 1000 seconds long
 
