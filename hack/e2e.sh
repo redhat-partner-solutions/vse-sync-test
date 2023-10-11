@@ -100,8 +100,8 @@ pushd "$ANALYSERPATH" >/dev/null 2>&1
 SYNCTESTCOMMIT="$(git show -s --format=%H HEAD)"
 popd >/dev/null 2>&1
 
-BASEURL_ENV_IDS=https://github.com/redhat-partner-solutions/vse-sync-test/tree/main/
-BASEURL_TEST_IDS=https://docs.engineering.redhat.com/vse-sync-test/
+BASEURL_ENV_IDS=https://github.com/redhat-partner-solutions/vse-sync-test/tree/main/tests/
+BASEURL_TEST_IDS=https://github.com/redhat-partner-solutions/vse-sync-test/tree/main/tests/
 BASEURL_SPECS=https://github.com/redhat-partner-solutions/vse-sync-test/blob/$SYNCTESTCOMMIT/
 
 FINALREPORTPATH=${OUTPUTDIR}"/test_report_"$(date -u +'%Y%m%dT%H%M%SZ')"_"$(echo "$SYNCTESTCOMMIT" | head -c 8)".pdf"
@@ -209,11 +209,11 @@ create_pdf() {
     "suites": {
         "Environment": {
             "repository": "vse-sync-test.git",
-            "baseurl": "${BASEURL_ENV_IDS}tests/"
+            "baseurl": "${BASEURL_ENV_IDS}"
         },
         "T-GM Tests": {
             "repository": "vse-sync-test.git",
-            "baseurl": "$BASEURL_TEST_IDS"
+            "baseurl": "${BASEURL_TEST_IDS}"
         }
     }
 }
