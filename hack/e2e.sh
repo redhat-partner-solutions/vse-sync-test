@@ -42,6 +42,7 @@ FULLJUNIT="$OUTPUTDIR/sync_test_report.xml"
 # defaults
 DURATION=2000s
 NAMESPACE=openshift-ptp
+DIFF_LOG=0
 
 usage() {
     cat - <<EOF
@@ -63,10 +64,11 @@ EOF
 }
 
 # Parse arguments and options
-while getopts ':i:d:' option; do
+while getopts ':i:d:l' option; do
     case "$option" in
         i) INTERFACE_NAME="$OPTARG" ;;
         d) DURATION="$OPTARG" ;;
+	l) DIFF_LOG=1 ;;
         \?) usage >&2 && exit 1 ;;
         :) usage >&2 && exit 1 ;;
     esac
@@ -149,8 +151,12 @@ collect_data() {
     pushd "$COLLECTORPATH" >/dev/null 2>&1
 
     echo "Collecting $DURATION of data. Please wait..."
-    go run main.go collect --interface="$INTERFACE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --output="$COLLECTED_DATA_FILE" --use-analyser-format --duration=$DURATION
-    go run hack/logs.go -k="$LOCAL_KUBECONFIG" -o="$PTP_DAEMON_LOGFILE" -t="$LOGARTEFACTDIR" -d="$DURATION";
+    go run main.go collect --interface="$INTERFACE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="$COLLECTED_DATA_FILE" --use-analyser-format --duration=$DURATION
+    if [ ${DIFF_LOG} -eq 1 ]
+    then
+        echo "Collecting $DURATION of data using old method. Please wait..."
+        go run hack/logs.go -k="$LOCAL_KUBECONFIG" -o="$LOGARTEFACTDIR/oldmethod.hack" -t="$LOGARTEFACTDIR" -d="$DURATION"
+    fi
     rm -r "$LOGARTEFACTDIR" # there are potentially hundreds of MB of logfiles, we keep only the time-window we are interested in.
 
     popd >/dev/null 2>&1
