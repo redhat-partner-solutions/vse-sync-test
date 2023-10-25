@@ -69,8 +69,8 @@ podman run \
   quay.io/redhat-partner-solutions/vse-sync-test:latest
 ----
 
-Test results will be printed as https://en.wikipedia.org/wiki/JUnit[JUnit] to
-stdout. You can also access the test data and results by mounting a directory
+The container requires a minimum of 4 CPU cores and 8Gig of RAM to run
+successfully. You can also access the test data and results by mounting a directory
 into the container at `/usr/vse/data`. For example:
 
 [source,shell]
