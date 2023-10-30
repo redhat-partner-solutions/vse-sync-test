@@ -42,6 +42,7 @@ FULLJUNIT="$OUTPUTDIR/sync_test_report.xml"
 # defaults
 DURATION=2000s
 NAMESPACE=openshift-ptp
+GNSS_NAME=
 DIFF_LOG=0
 
 usage() {
@@ -52,7 +53,8 @@ Arguments:
     kubeconfig: path to the kubeconfig to be used
 
 Options:
-    -i: name of the interface to gather data about
+    -i: name of the network interface under test
+    -g: name of the gnss device under test
     -d: how many seconds to run data collection
 
 If kubeconfig is not supplied then data collection is skipped:
@@ -64,14 +66,20 @@ EOF
 }
 
 # Parse arguments and options
-while getopts ':i:d:l' option; do
+while getopts ':i:g:d:l' option; do
     case "$option" in
         i) INTERFACE_NAME="$OPTARG" ;;
+	g) GNSS_NAME="$OPTARG" ;;
         d) DURATION="$OPTARG" ;;
 	l) DIFF_LOG=1 ;;
         \?) usage >&2 && exit 1 ;;
         :) usage >&2 && exit 1 ;;
     esac
+
+    if [[ -n $INTERFACE_NAME && -n $GNSS_NAME ]]; then
+        echo "Only provide one out of interface name or gnss name"
+        exit 1
+    fi
 done
 shift $((OPTIND - 1))
 
@@ -80,7 +88,7 @@ LOCAL_KUBECONFIG="$1"
 if [ ! -z "$LOCAL_KUBECONFIG" ]; then
     
     CTX=$(oc --kubeconfig=$LOCAL_KUBECONFIG config current-context)
-    CLUSTER_UNDER_TEST=$(oc --kubeconfig=$LOCAL_KUBECONFIG config view -ojsonpath="{.contexts[?(@.name == \"$CTX\")].context.cluster}")
+    CLUSTER_UNDER_TEST=$(oc --kubeconfig=$LOCAL_KUBECONFIG config view -ojsonpath="{.contexts[?(@.name == \"$CTX\")].context.cluster}" | sed -e "s/:.*//")
     if [ "$(oc --kubeconfig=$LOCAL_KUBECONFIG get ns $NAMESPACE -o jsonpath='{.status.phase}')" != "Active" ]; then
         echo "$0: error: $NAMESPACE is not active. Check the status of ptp operator namespace." 1>&2
         exit 1
@@ -89,7 +97,10 @@ if [ ! -z "$LOCAL_KUBECONFIG" ]; then
     oc project --kubeconfig=$LOCAL_KUBECONFIG $NAMESPACE # set namespace for data collection
 
     if [ -z $INTERFACE_NAME ]; then
-        INTERFACE_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ls /sys/class/gnss/gnss0/device/net/)
+        if [[ -z $GNSS_NAME ]]; then
+           GNSS_NAME=gnss0
+        fi
+        INTERFACE_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ls /sys/class/gnss/${GNSS_NAME}/device/net/)
         echo "Discovered interface name: $INTERFACE_NAME"
     fi
 else
@@ -110,7 +121,7 @@ BASEURL_ENV_IDS=https://github.com/redhat-partner-solutions/vse-sync-test/tree/m
 BASEURL_TEST_IDS=https://github.com/redhat-partner-solutions/vse-sync-test/tree/main/tests/
 BASEURL_SPECS=https://github.com/redhat-partner-solutions/vse-sync-test/blob/$SYNCTESTCOMMIT/
 
-FINALREPORTPATH=${OUTPUTDIR}"/test_report_"$CLUSTER_UNDER_TEST"_"$(date -u +'%Y%m%dT%H%M%SZ')"_"$(echo "$SYNCTESTCOMMIT" | head -c 8)".pdf"
+FINALREPORTPATH=${OUTPUTDIR}"/test_report_"${CLUSTER_UNDER_TEST}"_"$(date -u +'%Y%m%dT%H%M%SZ')"_"$(echo "$SYNCTESTCOMMIT" | head -c 8)".pdf"
 
 audit_repo() {
     pushd "$1" >/dev/null 2>&1
@@ -145,13 +156,20 @@ verify_env(){
     echo "Verifying test env. Please wait..."
     dt=$(date --rfc-3339='seconds' -u)
     local junit_template=$(echo ".[].data + { \"timestamp\": \"$dt\", "duration": 0}")
+    set +e
     go run main.go env verify --interface="$INTERFACE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format > $ENVJSONRAW
-    cat $ENVJSONRAW | jq -s -c "$junit_template" > $ENVJSON
+    if [ $? -gt 0 ]
+    then
+        cat $ENVJSONRAW
+    else
 
+        cat $ENVJSONRAW | jq -s -c "$junit_template" > $ENVJSON
+    fi
+    set -e
     popd >/dev/null 2>&1
 }
 
-collect_data() {
+collect_data(){
     pushd "$COLLECTORPATH" >/dev/null 2>&1
 
     echo "Collecting $DURATION of data. Please wait..."
