@@ -78,7 +78,9 @@ shift $((OPTIND - 1))
 LOCAL_KUBECONFIG="$1"
 
 if [ ! -z "$LOCAL_KUBECONFIG" ]; then
-
+    
+    CTX=$(oc --kubeconfig=$LOCAL_KUBECONFIG config current-context)
+    CLUSTER_UNDER_TEST=$(oc --kubeconfig=$LOCAL_KUBECONFIG config view -ojsonpath="{.contexts[?(@.name == \"$CTX\")].context.cluster}")
     if [ "$(oc --kubeconfig=$LOCAL_KUBECONFIG get ns $NAMESPACE -o jsonpath='{.status.phase}')" != "Active" ]; then
         echo "$0: error: $NAMESPACE is not active. Check the status of ptp operator namespace." 1>&2
         exit 1
@@ -90,6 +92,8 @@ if [ ! -z "$LOCAL_KUBECONFIG" ]; then
         INTERFACE_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ls /sys/class/gnss/gnss0/device/net/)
         echo "Discovered interface name: $INTERFACE_NAME"
     fi
+else
+    CLUSTER_UNDER_TEST="offline"
 fi
 
 mkdir -p $DATADIR
@@ -106,7 +110,7 @@ BASEURL_ENV_IDS=https://github.com/redhat-partner-solutions/vse-sync-test/tree/m
 BASEURL_TEST_IDS=https://github.com/redhat-partner-solutions/vse-sync-test/tree/main/tests/
 BASEURL_SPECS=https://github.com/redhat-partner-solutions/vse-sync-test/blob/$SYNCTESTCOMMIT/
 
-FINALREPORTPATH=${OUTPUTDIR}"/test_report_"$(date -u +'%Y%m%dT%H%M%SZ')"_"$(echo "$SYNCTESTCOMMIT" | head -c 8)".pdf"
+FINALREPORTPATH=${OUTPUTDIR}"/test_report_"$CLUSTER_UNDER_TEST"_"$(date -u +'%Y%m%dT%H%M%SZ')"_"$(echo "$SYNCTESTCOMMIT" | head -c 8)".pdf"
 
 audit_repo() {
     pushd "$1" >/dev/null 2>&1
@@ -198,11 +202,11 @@ EOF
 
 create_junit() {
     cat $ENVJSON | \
-        env PYTHONPATH=$TDPATH python3 -m testdrive.junit.create --baseurl-ids="$BASEURL_ENV_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "Environment" - \
+        env PYTHONPATH=$TDPATH python3 -m testdrive.junit.create --hostname="$CLUSTER_UNDER_TEST" --baseurl-ids="$BASEURL_ENV_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "Environment" - \
         > $ENVJUNIT
 
     cat $TESTJSON | \
-        env PYTHONPATH=$TDPATH python3 -m testdrive.junit.create --baseurl-ids="$BASEURL_TEST_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "T-GM Tests" - \
+        env PYTHONPATH=$TDPATH python3 -m testdrive.junit.create --hostname="$CLUSTER_UNDER_TEST" --baseurl-ids="$BASEURL_TEST_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "T-GM Tests" - \
         > $TESTJUNIT
 
     env PYTHONPATH=$TDPATH python3 -m testdrive.junit.merge --prettify $ARTEFACTDIR/*.junit > $FULLJUNIT
