@@ -32,7 +32,7 @@ def main():
     aparser.add_argument('input')
     args = aparser.parse_args()
     parser = TimeErrorParser()
-    plotter = Plotter(TIMESERIES, Axis("Time Error (unfiltered)", parser.y_name))
+    plotter = Plotter(TIMESERIES, Axis("Unfiltered Time Error (ns)", parser.y_name))
     with open_input(args.input) as fid:
         for parsed in parser.parse(fid, relative=True):
             plotter.append(parsed)
