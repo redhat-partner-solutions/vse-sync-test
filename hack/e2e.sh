@@ -15,7 +15,7 @@ ANALYSERPATH=$TESTROOT/vse-sync-test
 REPORTGENPATH=$TESTROOT/vse-sync-test-report
 REPORTPRIVSUTGENPATH=$TESTROOT/vse-sync-sut
 TDPATH=$TESTROOT/testdrive/src
-PPPATH=$ANALYSERPATH/src/vse-sync-pp/src
+PPPATH=$ANALYSERPATH/postprocess/src
 
 OUTPUTDIR=$TESTROOT/data
 DATADIR=$OUTPUTDIR/collected # Raw collected data/logs

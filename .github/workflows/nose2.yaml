@@ -17,4 +17,5 @@ jobs:
           python -m pip install --upgrade pip
           pip install nose2 pyyaml pandas numpy allantools
       - name: Run nose2
-        run: python -m nose2
+        # run: python -m nose2
+        run: python -m nose2 -s postprocess  # only do postprocessing code
