@@ -1,0 +1,4 @@
+requirements: G.8272/PRTC-A
+parameters:
+  foo: bar
+  baz: 8

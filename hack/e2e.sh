@@ -15,7 +15,7 @@ ANALYSERPATH=$TESTROOT/vse-sync-test
 REPORTGENPATH=$TESTROOT/vse-sync-test-report
 REPORTPRIVSUTGENPATH=$TESTROOT/vse-sync-sut
 TDPATH=$TESTROOT/testdrive/src
-PPPATH=$ANALYSERPATH/vse-sync-pp/src
+PPPATH=$ANALYSERPATH/src/vse-sync-pp/src
 
 OUTPUTDIR=$TESTROOT/data
 DATADIR=$OUTPUTDIR/collected # Raw collected data/logs
@@ -143,7 +143,6 @@ audit_container() {
 {
     "vse-sync-collection-tools": $(audit_repo $COLLECTORPATH),
     "vse-sync-test": $(audit_repo $ANALYSERPATH),
-    "vse-sync-pp": $(audit_repo $PPPATH),
     "testdrive": $(audit_repo $TDPATH),
     "vse-sync-test-report": $(audit_repo $REPORTGENPATH)
 }

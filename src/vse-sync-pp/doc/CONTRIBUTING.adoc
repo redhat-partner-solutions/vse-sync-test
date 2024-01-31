@@ -1,0 +1,61 @@
+= Contributing
+
+You can contribute to the modules in this repo in several ways. In terms of a "good PR" there is one important requirement to fulfill:
+
+1. A PR that provides a new class or an updated class in `parsers` module requires its respective set of unit tests.
+
+2. A PR that provides a new class or an updated class in `analyzers` module requires its respective set of unit tests.
+
+== Parsers
+
+Collector and/or ptp operator logs parsers are contributed into `src/vse_sync_pp/parsers/`.
+
+Each log file parser must be represented by a separate class that:
+
+* is provided in an appropriate module, with module named by:
+    * user space process;
+    * kernel module; or,
+    * functional area
+* is registered in `vse_sync_pp.parse.PARSERS`
+* has unit test cases built by class `ParserTestBuilder`
+    * (`tests/vse_sync_pp/parsers/test_parser.py`)
+
+== Analyzers
+
+Log file analyzers are contributed into `src/vse_sync_pp/analyzers/`.
+
+Each log file analyzer must be represented by a separate class that:
+
+* inherits from Analyzer class
+* is provided in an appropriate module
+* is registered in `vse_sync_pp.analyze.ANALYZERS`
+* has unit test cases built by class `AnalyzerTestBuilder`
+    * (`tests/vse_sync_pp/analyzers/test_analyzer.py`)
+* an example of `Analyzer` is `TimeErrorAnalyzerBase` class
+
+=== TimeErrorAnalyzerBase
+
+`TimeErrorAnalyzerBase` is a class used to calculate the time error of a given kind of clock. Derived clases with name `TimeErrorAnalyzer` override details specifics of the time error calculation for eahc clock type under evaluation. For example, each clock type has a specific value of locked clock classes:
+
+Derived class `TimeErrorAnalyzer` for the DPLL clock marks the state Locked as `3`:
+
+[source, python]
+---
+locked = frozenset({3})
+---
+
+whereas derived class `TimeErrorAnalyzer` for PTP Hardware Clock marks Locked state as `s2`:
+
+[source, python]
+---
+locked = frozenset({'s2'})
+---
+
+== Demuxers
+
+Contributions to demux module can be done by proposing changes based on `src/vse_sync_pp/demux.py`.
+
+== Plots
+
+Contributions to plot module can be done by proposing changes based on
+`src/vse_sync_pp/plot.py`.
