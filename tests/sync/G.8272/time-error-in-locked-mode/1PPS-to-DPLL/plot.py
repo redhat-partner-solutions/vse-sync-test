@@ -20,6 +20,7 @@ from vse_sync_pp.common import (
 from vse_sync_pp.parsers.dpll import TimeErrorParser
 from vse_sync_pp.plot import Plotter, Axis, TIMESERIES
 
+
 def main():
     """Plot test data and print files output as JSON to stdout
 
@@ -45,6 +46,7 @@ def main():
     # Python exits with error code 1 on EPIPE
     if not print_loj([item]):
         sys.exit(1)
+
 
 if __name__ == '__main__':
     main()
