@@ -104,7 +104,7 @@ For example to run analysis over an existing dataset stored in `~/tmp/data/` the
 
 [source,shell]
 ----
-podman run -v ~/kubeconfig-cormorant:/usr/vse/kubeconfig -v ~/tmp/data:/usr/vse/data quay.io/redhat-partner-solutions/vse-sync-test:latest ./vse-sync-test/hack/e2e.sh
+podman run -v ~/kubeconfig-cormorant:/usr/vse/kubeconfig -v ~/tmp/data:/usr/vse/data quay.io/redhat-partner-solutions/vse-sync-test:latest ./vse-sync-test/cmd/e2e.sh
 ----
 
 == Development Setup
@@ -127,11 +127,11 @@ $ tree -L 1
 - To clean up a previous run and do a new test run:
 [source,shell]
 ----
-$ rm -r data/*; ./vse-sync-test/hack/e2e.sh -d 2000s ~/kubeconfig-cormorant
+$ rm -r data/*; ./vse-sync-test/cmd/e2e.sh -d 2000s ~/kubeconfig-cormorant
 ----
 
 - Omit the kubeconfig to skip data collection and re-analyse existing data in `data/collected/` :
 [source,shell]
 ----
-$ rm -r data/artefacts; rm data/*; ./vse-sync-test/hack/e2e.sh
+$ rm -r data/artefacts; rm data/*; ./vse-sync-test/cmd/e2e.sh
 ----
