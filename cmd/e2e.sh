@@ -14,7 +14,7 @@ COLLECTORPATH=$TESTROOT/vse-sync-collection-tools
 ANALYSERPATH=$TESTROOT/vse-sync-test
 REPORTGENPATH=$TESTROOT/vse-sync-test-report
 REPORTPRIVSUTGENPATH=$TESTROOT/vse-sync-sut
-TDPATH=$TESTROOT/testdrive/src
+TDPATH=$ANALYSERPATH/testdrive/src
 PPPATH=$ANALYSERPATH/postprocess/src
 
 OUTPUTDIR=$TESTROOT/data
@@ -143,7 +143,6 @@ audit_container() {
 {
     "vse-sync-collection-tools": $(audit_repo $COLLECTORPATH),
     "vse-sync-test": $(audit_repo $ANALYSERPATH),
-    "testdrive": $(audit_repo $TDPATH),
     "vse-sync-test-report": $(audit_repo $REPORTGENPATH)
 }
 EOF
@@ -254,13 +253,13 @@ create_pdf() {
 }
 EOF
 
-    env PYTHONPATH=$TDPATH make CONFIG=$config JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR BUILDER=native GIT_HASH=$(echo "$SYNCTESTCOMMIT" | head -c 8) clean
+    make CONFIG=$config JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR BUILDER=native GIT_HASH=$(echo "$SYNCTESTCOMMIT" | head -c 8) clean
 
     if [ -d "$REPORTPRIVSUTGENPATH" ];
     then
-        env PYTHONPATH=$TDPATH make CONFIG=$config ATTRIBUTES="allow-uri-read" JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR BUILDER=native GIT_HASH=$(echo "$SYNCTESTCOMMIT" | head -c 8) ADOC=$REPORTPRIVSUTGENPATH/doc/setup.adoc PNG=$REPORTPRIVSUTGENPATH/doc/testreport.png all
+        make CONFIG=$config ATTRIBUTES="allow-uri-read" JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR BUILDER=native GIT_HASH=$(echo "$SYNCTESTCOMMIT" | head -c 8) ADOC=$REPORTPRIVSUTGENPATH/doc/setup.adoc PNG=$REPORTPRIVSUTGENPATH/doc/testreport.png all
     else
-        env PYTHONPATH=$TDPATH make CONFIG=$config ATTRIBUTES="allow-uri-read" JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR BUILDER=native GIT_HASH=$(echo "$SYNCTESTCOMMIT" | head -c 8) all
+        make CONFIG=$config ATTRIBUTES="allow-uri-read" JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR BUILDER=native GIT_HASH=$(echo "$SYNCTESTCOMMIT" | head -c 8) all
     fi
 
     mv $REPORTARTEFACTDIR/test-report.pdf $FINALREPORTPATH
