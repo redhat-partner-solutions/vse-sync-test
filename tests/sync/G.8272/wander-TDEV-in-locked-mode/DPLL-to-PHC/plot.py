@@ -20,7 +20,7 @@ from vse_sync_pp.common import (
 )
 from collections import namedtuple
 
-from vse_sync_pp.plot import Plotter, Axis, TIMESERIES
+from vse_sync_pp.plot import Plotter, Axis
 
 from vse_sync_pp.parsers.ts2phc import TimeErrorParser
 from vse_sync_pp.analyzers.ts2phc import TimeDeviationAnalyzer
@@ -28,13 +28,15 @@ from vse_sync_pp.analyzers.analyzer import Config
 
 CONFIG = joinpath(dirname(__file__), 'config.yaml')
 
+
 def plot_data(analyzer, output):
     """Plot data"""
     plotter = Plotter(Axis("tau observation window (s)", "tau", "log"), Axis("filtered TDEV (ns)", "tdev"))
-    Parsed = namedtuple('Parsed',('tau','tdev'))
-    for tau,sample in analyzer.toplot():
-      plotter.append(Parsed(tau, sample))
+    Parsed = namedtuple('Parsed', ('tau', 'tdev'))
+    for tau, sample in analyzer.toplot():
+        plotter.append(Parsed(tau, sample))
     plotter.plot_scatter(output)
+
 
 def main():
     """Plot test data and print files output as JSON to stdout
@@ -53,7 +55,7 @@ def main():
     analyzer = TimeDeviationAnalyzer(Config.from_yaml(CONFIG))
     with open_input(args.input) as fid:
         analyzer.collect(*parser.parse(fid))
-    
+
     # plot data
     output = f'{args.prefix}.png'
     plot_data(analyzer, output)
@@ -64,6 +66,7 @@ def main():
     # Python exits with error code 1 on EPIPE
     if not print_loj([item]):
         sys.exit(1)
+
 
 if __name__ == '__main__':
     main()

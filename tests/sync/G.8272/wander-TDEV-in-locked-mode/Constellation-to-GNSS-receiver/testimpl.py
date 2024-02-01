@@ -25,6 +25,7 @@ from vse_sync_pp.analyzers.analyzer import Config
 
 CONFIG = joinpath(dirname(__file__), 'config.yaml')
 
+
 def refimpl(filename, encoding='utf-8'):
     """A reference implementation for tests under:
 
@@ -46,6 +47,7 @@ def refimpl(filename, encoding='utf-8'):
         'analysis': analyzer.analysis,
     }
 
+
 def main():
     """Run this test and print test output as JSON to stdout"""
     aparser = ArgumentParser(description=main.__doc__)
@@ -55,6 +57,7 @@ def main():
     # Python exits with error code 1 on EPIPE
     if not print_loj(output):
         sys.exit(1)
+
 
 if __name__ == '__main__':
     main()
