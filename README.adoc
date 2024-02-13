@@ -44,12 +44,6 @@ more than one reference implementation is provided then each implementation must
 codify the same test behaviour (all reference implementations must return the
 same test result for the same test conditions/observations).
 
-== Getting Started
-
-Initialize the required python submodules:
-
-`git submodule update --init --recursive`
-
 == Contributing to the repo
 
 See the link:doc/CONTRIBUTING.adoc[contribution guide] for detailed instructions
@@ -58,26 +52,20 @@ on how to get started contributing to this repo.
 == Using the Container
 
 A container is available that contains all the tests; it is pre-configured to do
-a long duration test run. The only input needed is a kubeconfig for the cluster
-under test. This must be mounted into the container at `/usr/vse/kubeconfig`.
-You can run the container using this command:
-
-[source,shell]
-----
-podman run \
-  -v ~/kubeconfig:/usr/vse/kubeconfig \
-  quay.io/redhat-partner-solutions/vse-sync-test:latest
-----
+a reasonably long duration test run. The only input needed is a kubeconfig for the
+cluster under test. This must be mounted into the container at `/usr/vse/kubeconfig`.
+You can run the container using the example below.
 
 The container requires a minimum of 4 CPU cores and 8Gig of RAM to run
-successfully. You can also access the test data and results by mounting a directory
-into the container at `/usr/vse/data`. For example:
+successfully. It runs outside the cluster under test. You can access the test
+data and results by mounting a directory into the container at `/usr/vse/data`.
+For example:
 
 [source,shell]
 ----
 podman run \
-  -v ~/kubeconfig:/usr/vse/kubeconfig \
-  -v /home/redhat/tmp/data:/usr/vse/data \
+  -v ~/kubeconfig:/usr/vse/kubeconfig:Z \
+  -v /home/redhat/tmp/data:/usr/vse/data:Z \
   quay.io/redhat-partner-solutions/vse-sync-test:latest
 ----
 
@@ -99,12 +87,17 @@ gives:
 
 == Advanced container usage
 
-If you need more capabilities then providing a different commend to the container, or starting a session inside it, to get access to the individual tools.
-For example to run analysis over an existing dataset stored in `~/tmp/data/` the follow command could be used, omitting the kubeconfig:
+If you need more capabilities then providing a different commend to the container,
+or starting a session inside it, to get access to the individual tools.
+For example to run analysis over an existing dataset stored in `~/tmp/data/`
+the follow command could be used, which omits the kubeconfig for the `e2e.sh` script
+and therefore data skips collection:
 
 [source,shell]
 ----
-podman run -v ~/kubeconfig-cormorant:/usr/vse/kubeconfig -v ~/tmp/data:/usr/vse/data quay.io/redhat-partner-solutions/vse-sync-test:latest ./vse-sync-test/cmd/e2e.sh
+podman run \
+  -v /home/redhat/tmp/data:/usr/vse/data:Z \
+  quay.io/redhat-partner-solutions/vse-sync-test:latest ./vse-sync-test/cmd/e2e.sh
 ----
 
 == Development Setup
@@ -116,9 +109,7 @@ For a local setup you can use to develop and integrate changes:
 ----
 $ tree -L 1
 .
-├── cluster-action-injector
 ├── data
-├── testdrive
 ├── vse-sync-collection-tools
 ├── vse-sync-test
 └── vse-sync-test-report
