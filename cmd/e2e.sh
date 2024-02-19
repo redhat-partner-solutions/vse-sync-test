@@ -22,7 +22,6 @@ DATADIR=$OUTPUTDIR/collected # Raw collected data/logs
 ARTEFACTDIR=$OUTPUTDIR/artefacts # place mid pipeline files here
 PLOTDIR=$ARTEFACTDIR/plots
 REPORTARTEFACTDIR=$ARTEFACTDIR/report
-LOGARTEFACTDIR=$ARTEFACTDIR/log
 
 COLLECTED_DATA_FILE=$DATADIR/collected.log
 PTP_DAEMON_LOGFILE=$DATADIR/linuxptp-daemon-container.log
@@ -43,7 +42,6 @@ FULLJUNIT="$OUTPUTDIR/sync_test_report.xml"
 DURATION=2000s
 NAMESPACE=openshift-ptp
 GNSS_NAME=
-DIFF_LOG=0
 
 usage() {
     cat - <<EOF
@@ -69,9 +67,8 @@ EOF
 while getopts ':i:g:d:l' option; do
     case "$option" in
         i) INTERFACE_NAME="$OPTARG" ;;
-	g) GNSS_NAME="$OPTARG" ;;
+        g) GNSS_NAME="$OPTARG" ;;
         d) DURATION="$OPTARG" ;;
-	l) DIFF_LOG=1 ;;
         \?) usage >&2 && exit 1 ;;
         :) usage >&2 && exit 1 ;;
     esac
@@ -110,7 +107,6 @@ fi
 mkdir -p $DATADIR
 mkdir -p $ARTEFACTDIR
 mkdir -p $REPORTARTEFACTDIR
-mkdir -p $LOGARTEFACTDIR
 mkdir -p $PLOTDIR
 
 pushd "$ANALYSERPATH" >/dev/null 2>&1
@@ -172,12 +168,6 @@ collect_data(){
 
     echo "Collecting $DURATION of data. Please wait..."
     go run main.go collect --interface="$INTERFACE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="$COLLECTED_DATA_FILE" --use-analyser-format --duration=$DURATION
-    if [ ${DIFF_LOG} -eq 1 ]
-    then
-        echo "Collecting $DURATION of data using old method. Please wait..."
-        go run hack/logs.go -k="$LOCAL_KUBECONFIG" -o="$LOGARTEFACTDIR/oldmethod.hack" -t="$LOGARTEFACTDIR" -d="$DURATION"
-    fi
-    rm -r "$LOGARTEFACTDIR" # there are potentially hundreds of MB of logfiles, we keep only the time-window we are interested in.
 
     popd >/dev/null 2>&1
 }
