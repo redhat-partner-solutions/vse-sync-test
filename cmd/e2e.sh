@@ -42,12 +42,13 @@ FULLJUNIT="$OUTPUTDIR/sync_test_report.xml"
 # defaults
 DURATION=2000s
 NAMESPACE=openshift-ptp
+NODE_NAME=""
 GNSS_NAME=
 DIFF_LOG=0
 
 usage() {
     cat - <<EOF
-Usage: $(basename "$0") [-i INTERFACE_NAME] [-d DURATION] ?kubeconfig?
+Usage: $(basename "$0") [-i INTERFACE_NAME] [-d DURATION] [-n nodeName] ?kubeconfig?
 
 Arguments:
     kubeconfig: path to the kubeconfig to be used
@@ -67,13 +68,13 @@ EOF
 }
 
 # Parse arguments and options
-while getopts ':i:g:d:l:n' option; do
+while getopts ':i:g:d:l:n:' option; do
     case "$option" in
-        i) INTERFACE_NAME="$OPTARG" ;;
+  i) INTERFACE_NAME="$OPTARG" ;;
 	g) GNSS_NAME="$OPTARG" ;;
         d) DURATION="$OPTARG" ;;
 	l) DIFF_LOG=1 ;;
-  n) NODE_NAME="$OPTARG"  ;;
+  n) NODE_NAME="$OPTARG" ;;
         \?) usage >&2 && exit 1 ;;
         :) usage >&2 && exit 1 ;;
     esac
@@ -95,7 +96,6 @@ if [ ! -z "$LOCAL_KUBECONFIG" ]; then
         echo "$0: error: $NAMESPACE is not active. Check the status of ptp operator namespace." 1>&2
         exit 1
     fi
-
     oc project --kubeconfig=$LOCAL_KUBECONFIG $NAMESPACE # set namespace for data collection
 
     if [ -z $NODE_NAME ]; then
@@ -112,7 +112,7 @@ if [ ! -z "$LOCAL_KUBECONFIG" ]; then
         fi
         if [ ! -z $NODE_NAME ]; then
            POD_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG get pods --field-selector="spec.nodeName=$NODE_NAME" -o json | jq -r '.items[] | select(.metadata.name | test("linuxptp-daemon")).metadata.name')
-           INTERFACE_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG exec POD_NAME -c linuxptp-daemon-container -- ls /sys/class/gnss/${GNSS_NAME}/device/net/)
+           INTERFACE_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG exec $POD_NAME -c linuxptp-daemon-container -- ls /sys/class/gnss/${GNSS_NAME}/device/net/)
            echo "Discovered interface name: $INTERFACE_NAME"
         else
            INTERFACE_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ls /sys/class/gnss/${GNSS_NAME}/device/net/)
@@ -172,7 +172,6 @@ verify_env(){
     local junit_template=$(echo ".[].data + { \"timestamp\": \"$dt\", "duration": 0}")
     set +e
     go run main.go env verify --interface="$INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format > $ENVJSONRAW
-    fi
 
     if [ $? -gt 0 ]
     then
@@ -189,7 +188,7 @@ collect_data(){
     pushd "$COLLECTORPATH" >/dev/null 2>&1
 
     echo "Collecting $DURATION of data. Please wait..."
-    go run main.go collect --interface="$INTERFACE_NAME" --nodeName=$NODE_NAME --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="$COLLECTED_DATA_FILE" --use-analyser-format --duration=$DURATION
+    go run main.go collect --interface="$INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="$COLLECTED_DATA_FILE" --use-analyser-format --duration=$DURATION
 
     if [ ${DIFF_LOG} -eq 1 ]
     then
