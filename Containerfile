@@ -1,5 +1,6 @@
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
-
+#node name should be passed in when testing an MNO cluster defaulting to SNO usecase of empty.
+ARG NODENAME=""
 RUN microdnf install -y git golang python3 python3-pip tar python3-yaml jq ruby
 RUN pip3 install pandas junitparser matplotlib allantools
 RUN gem install asciidoctor-pdf:2.3.9 asciidoctor-diagram:2.2.14 rouge:3.30.0
@@ -20,4 +21,4 @@ WORKDIR ${VSE_DIR}/vse-sync-collection-tools
 RUN go mod vendor
 
 WORKDIR ${VSE_DIR}
-CMD ["./vse-sync-test/cmd/e2e.sh", "-d", "2000s", "/usr/vse/kubeconfig"]
+CMD ["./vse-sync-test/cmd/e2e.sh", "-d", "2000s","-n","$NODENAME" ,"/usr/vse/kubeconfig"]
