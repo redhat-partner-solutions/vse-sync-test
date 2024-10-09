@@ -56,6 +56,7 @@ Options:
     -i: name of the network interface under test
     -g: name of the gnss device under test
     -d: how many seconds to run data collection
+    -n: nodeName that we need to run the tests on (Required for MNO use case)
 
 If kubeconfig is not supplied then data collection is skipped:
 a pre-existing dataset must be available in $DATADIR
@@ -66,12 +67,13 @@ EOF
 }
 
 # Parse arguments and options
-while getopts ':i:g:d:l' option; do
+while getopts ':i:g:d:l:n' option; do
     case "$option" in
         i) INTERFACE_NAME="$OPTARG" ;;
 	g) GNSS_NAME="$OPTARG" ;;
         d) DURATION="$OPTARG" ;;
 	l) DIFF_LOG=1 ;;
+  n) NODE_NAME="$OPTARG"  ;;
         \?) usage >&2 && exit 1 ;;
         :) usage >&2 && exit 1 ;;
     esac
@@ -96,12 +98,26 @@ if [ ! -z "$LOCAL_KUBECONFIG" ]; then
 
     oc project --kubeconfig=$LOCAL_KUBECONFIG $NAMESPACE # set namespace for data collection
 
+    if [ -z $NODE_NAME ]; then
+        NUM_OF_NODES=$(oc --kubeconfig=$LOCAL_KUBECONFIG get nodes --output json | jq -j '.items | length')
+        if [[ "$NUM_OF_NODES" -gt 1 ]]; then
+          echo "nodeName is required for an MNO cluster test run. Please pass in the nodename linked to the interface connected to the GNSS signal"
+          exit 1
+        fi
+    fi
+
     if [ -z $INTERFACE_NAME ]; then
         if [[ -z $GNSS_NAME ]]; then
            GNSS_NAME=gnss0
         fi
-        INTERFACE_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ls /sys/class/gnss/${GNSS_NAME}/device/net/)
-        echo "Discovered interface name: $INTERFACE_NAME"
+        if [ ! -z $NODE_NAME ]; then
+           POD_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG get pods --field-selector="spec.nodeName=$NODE_NAME" -o json | jq -r '.items[] | select(.metadata.name | test("linuxptp-daemon")).metadata.name')
+           INTERFACE_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG exec POD_NAME -c linuxptp-daemon-container -- ls /sys/class/gnss/${GNSS_NAME}/device/net/)
+           echo "Discovered interface name: $INTERFACE_NAME"
+        else
+           INTERFACE_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ls /sys/class/gnss/${GNSS_NAME}/device/net/)
+           echo "Discovered interface name: $INTERFACE_NAME"
+        fi
     fi
 else
     CLUSTER_UNDER_TEST="offline"
@@ -155,7 +171,9 @@ verify_env(){
     dt=$(date --rfc-3339='seconds' -u)
     local junit_template=$(echo ".[].data + { \"timestamp\": \"$dt\", "duration": 0}")
     set +e
-    go run main.go env verify --interface="$INTERFACE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format > $ENVJSONRAW
+    go run main.go env verify --interface="$INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format > $ENVJSONRAW
+    fi
+
     if [ $? -gt 0 ]
     then
         cat $ENVJSONRAW
@@ -171,7 +189,8 @@ collect_data(){
     pushd "$COLLECTORPATH" >/dev/null 2>&1
 
     echo "Collecting $DURATION of data. Please wait..."
-    go run main.go collect --interface="$INTERFACE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="$COLLECTED_DATA_FILE" --use-analyser-format --duration=$DURATION
+    go run main.go collect --interface="$INTERFACE_NAME" --nodeName=$NODE_NAME --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="$COLLECTED_DATA_FILE" --use-analyser-format --duration=$DURATION
+
     if [ ${DIFF_LOG} -eq 1 ]
     then
         echo "Collecting $DURATION of data using old method. Please wait..."
