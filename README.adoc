@@ -99,6 +99,22 @@ podman run \
   -v /home/redhat/tmp/data:/usr/vse/data:Z \
   quay.io/redhat-partner-solutions/vse-sync-test:latest ./vse-sync-test/cmd/e2e.sh
 ----
+== MNO Support
+
+If you are looking to run the tests on a Grandmaster interface on an Multi Node Cluster we
+need to pass in an additional value to the container. We need to set the ptpNodeName,
+which is the node that has the NIC connected to the GNSS signal. The nodeName is passed as
+an environment variable.
+
+For example:
+[source,shell]
+----
+podman run \
+  -e $PTPNODENAME=<nodeName>
+  -v ~/kubeconfig:/usr/vse/kubeconfig:Z \
+  -v /home/redhat/tmp/data:/usr/vse/data:Z \
+  quay.io/redhat-partner-solutions/vse-sync-test:latest
+----
 
 == Development Setup
 
