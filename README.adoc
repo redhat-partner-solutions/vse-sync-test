@@ -110,7 +110,7 @@ For example:
 [source,shell]
 ----
 podman run \
-  -e $PTPNODENAME=<nodeName>
+  -e PTPNODENAME=<nodeName>
   -v ~/kubeconfig:/usr/vse/kubeconfig:Z \
   -v /home/redhat/tmp/data:/usr/vse/data:Z \
   quay.io/redhat-partner-solutions/vse-sync-test:latest
