@@ -48,10 +48,12 @@ def main():
     aparser = ArgumentParser(description=main.__doc__)
     aparser.add_argument('prefix', help="output image prefix")
     aparser.add_argument('input')
+    aparser.add_argument('interface', help="interface to capture", default=None)
+
     args = aparser.parse_args()
 
     # get data for plot from analyzer
-    parser = TimeErrorParser()
+    parser = TimeErrorParser(args.interface)
     analyzer = TimeDeviationAnalyzer(Config.from_yaml(CONFIG))
     with open_input(args.input) as fid:
         analyzer.collect(*parser.parse(fid))
