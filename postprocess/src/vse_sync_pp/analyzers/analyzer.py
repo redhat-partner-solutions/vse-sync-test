@@ -138,7 +138,7 @@ class Analyzer():
         """
         # `dtv` is a timezone-aware datetime value with resolution of seconds
         dtv = datetime.fromtimestamp(int(dec), tz=timezone.utc)
-        if datetime.now().year - dtv.year <= 1:
+        if dtv.year > 2020: # Probably an absolute timestamp if year is after 2020.
             # absolute date-time
             return dtv.isoformat()
         # relative time
