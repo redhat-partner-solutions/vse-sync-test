@@ -54,26 +54,32 @@ class ParserTestBuilder(type):
             'test_make_parsed': cls.make_test_make_parsed(
                 constructor, fqname,
                 dct['accept'][0][1],
+                dct.get("constructor_kwargs", {}),
             ),
             'test_accept': cls.make_test_accept(
                 constructor, fqname,
                 dct['elems'], dct['accept'],
+                dct.get("constructor_kwargs", {}),
             ),
             'test_reject': cls.make_test_reject(
                 constructor, fqname,
                 dct['reject'],
+                dct.get("constructor_kwargs", {}),
             ),
             'test_discard': cls.make_test_discard(
                 constructor, fqname,
                 dct['discard'],
+                dct.get("constructor_kwargs", {}),
             ),
             'test_file': cls.make_test_file(
                 constructor, fqname,
                 dct['file'][0], dct['file'][1],
+                dct.get("constructor_kwargs", {}),
             ),
             'test_canonical': cls.make_test_canonical(
                 constructor, fqname,
                 dct['file'][1],
+                dct.get("constructor_kwargs", {}),
             ),
         })
         return super().__new__(cls, name, bases, dct)
@@ -100,11 +106,11 @@ class ParserTestBuilder(type):
         return method
 
     @staticmethod
-    def make_test_make_parsed(constructor, fqname, expect):
+    def make_test_make_parsed(constructor, fqname, expect, constructor_kwargs):
         """Make a function testing parser makes parsed"""
         def method(self):
             """Test parser makes parsed"""
-            parser = constructor()
+            parser = constructor(**constructor_kwargs)
             self.assertEqual(parser.make_parsed(expect), expect)
             with self.assertRaises(ValueError):
                 parser.make_parsed(expect[:-1])
@@ -112,12 +118,12 @@ class ParserTestBuilder(type):
         return method
 
     @staticmethod
-    def make_test_accept(constructor, fqname, elems, accept):
+    def make_test_accept(constructor, fqname, elems, accept, constructor_kwargs):
         """Make a function testing parser accepts line"""
         @params(*accept)
         def method(self, line, expect):
             """Test parser accepts line"""
-            parser = constructor()
+            parser = constructor(**constructor_kwargs)
             parsed = parser.parse_line(line)
             # test parsed value as a tuple
             self.assertEqual(expect, parsed)
@@ -128,36 +134,36 @@ class ParserTestBuilder(type):
         return method
 
     @staticmethod
-    def make_test_reject(constructor, fqname, reject):
+    def make_test_reject(constructor, fqname, reject, constructor_kwargs):
         """Make a function testing parser rejects line"""
         @params(*reject)
         def method(self, line):
             """Test parser rejects line"""
-            parser = constructor()
+            parser = constructor(**constructor_kwargs)
             with self.assertRaises(ValueError):
                 parser.parse_line(line)
         method.__doc__ = f'Test {fqname} rejects line'
         return method
 
     @staticmethod
-    def make_test_discard(constructor, fqname, discard):
+    def make_test_discard(constructor, fqname, discard, constructor_kwargs):
         """Make a function testing parser discards line"""
         @params(*discard)
         def method(self, line):
             """Test parser discards line"""
-            parser = constructor()
+            parser = constructor(**constructor_kwargs)
             parsed = parser.parse_line(line)
             self.assertIsNone(parsed)
         method.__doc__ = f'Test {fqname} discards line'
         return method
 
     @staticmethod
-    def make_test_file(constructor, fqname, lines, expect):
+    def make_test_file(constructor, fqname, lines, expect, constructor_kwargs):
         """Make a function testing parser parses `expect` from `lines`"""
         def method(self):
             """Test parser parses file"""
             ### parse presented timestamps
-            parser = constructor()
+            parser = constructor(**constructor_kwargs)
             parsed = parser.parse(StringIO(lines))
             for pair in zip(parsed, expect, strict=True):
                 self.assertEqual(pair[0], pair[1])
@@ -173,7 +179,7 @@ class ParserTestBuilder(type):
                         tzero = item[tidx]
                     ritem[tidx] = item[tidx] - tzero
                     yield tuple(ritem)
-            parser = constructor()
+            parser = constructor(**constructor_kwargs)
             parsed = parser.parse(StringIO(lines), relative=True)
             for pair in zip(parsed, relative(expect), strict=True):
                 self.assertEqual(pair[0], pair[1])
@@ -181,14 +187,14 @@ class ParserTestBuilder(type):
         return method
 
     @staticmethod
-    def make_test_canonical(constructor, fqname, expect):
+    def make_test_canonical(constructor, fqname, expect, constructor_kwargs):
         """Make a function testing parser parses `expect` from `expect`"""
         def method(self):
             """Test parser parses canonical"""
             lines = '\n'.join((
                 json.dumps(e, cls=JsonEncoder) for e in expect
             )) + '\n'
-            parser = constructor()
+            parser = constructor(**constructor_kwargs)
             parsed = parser.canonical(StringIO(lines))
             for pair in zip(parsed, expect, strict=True):
                 self.assertEqual(pair[0], pair[1])
