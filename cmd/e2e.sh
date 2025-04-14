@@ -58,6 +58,7 @@ Options:
     -g: name of the gnss device under test
     -d: how many seconds to run data collection
     -n: nodeName that we need to run the tests on (Required for MNO use case)
+    -j: ptp clock device used for filtering data in DPLL to PHC tests (Required when running in offline mode, otherwise inferred from interface name).
 
 If kubeconfig is not supplied then data collection is skipped:
 a pre-existing dataset must be available in $DATADIR
@@ -68,15 +69,16 @@ EOF
 }
 
 # Parse arguments and options
-while getopts ':i:g:d:l:n:' option; do
+while getopts ':i:g:d:l:n:j:' option; do
     case "$option" in
-  i) INTERFACE_NAME="$OPTARG" ;;
+    i) INTERFACE_NAME="$OPTARG" ;;
 	g) GNSS_NAME="$OPTARG" ;;
-        d) DURATION="$OPTARG" ;;
-	l) DIFF_LOG=1 ;;
-  n) NODE_NAME="$OPTARG" ;;
-        \?) usage >&2 && exit 1 ;;
-        :) usage >&2 && exit 1 ;;
+    d) DURATION="$OPTARG" ;;
+    l) DIFF_LOG=1 ;;
+    n) NODE_NAME="$OPTARG" ;;
+    j) MASTER_PTP_CLOCK_DEV="$OPTARG" ;;
+    \?) usage >&2 && exit 1 ;;
+    :) usage >&2 && exit 1 ;;
     esac
 
     if [[ -n $INTERFACE_NAME && -n $GNSS_NAME ]]; then
@@ -89,7 +91,7 @@ shift $((OPTIND - 1))
 LOCAL_KUBECONFIG="$1"
 
 if [ ! -z "$LOCAL_KUBECONFIG" ]; then
-    
+
     CTX=$(oc --kubeconfig=$LOCAL_KUBECONFIG config current-context)
     CLUSTER_UNDER_TEST=$(oc --kubeconfig=$LOCAL_KUBECONFIG config view -ojsonpath="{.contexts[?(@.name == \"$CTX\")].context.cluster}" | sed -e "s/:.*//")
     if [ "$(oc --kubeconfig=$LOCAL_KUBECONFIG get ns $NAMESPACE -o jsonpath='{.status.phase}')" != "Active" ]; then
@@ -101,25 +103,33 @@ if [ ! -z "$LOCAL_KUBECONFIG" ]; then
     if [ -z $NODE_NAME ]; then
         NUM_OF_NODES=$(oc --kubeconfig=$LOCAL_KUBECONFIG get nodes --output json | jq -j '.items | length')
         if [[ "$NUM_OF_NODES" -gt 1 ]]; then
-          echo "nodeName is required for an MNO cluster test run. Please pass in the nodename linked to the interface connected to the GNSS signal"
-          exit 1
+            echo "nodeName is required for an MNO cluster test run. Please pass in the nodename linked to the interface connected to the GNSS signal"
+            exit 1
         fi
     fi
 
     if [ -z $INTERFACE_NAME ]; then
         if [[ -z $GNSS_NAME ]]; then
-           GNSS_NAME=gnss0
+            GNSS_NAME=gnss0
         fi
         if [ ! -z $NODE_NAME ]; then
-           POD_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG get pods --field-selector="spec.nodeName=$NODE_NAME" -o json | jq -r '.items[] | select(.metadata.name | test("linuxptp-daemon")).metadata.name')
-           INTERFACE_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG exec $POD_NAME -c linuxptp-daemon-container -- ls /sys/class/gnss/${GNSS_NAME}/device/net/)
-           echo "Discovered interface name: $INTERFACE_NAME"
+            POD_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG get pods --field-selector="spec.nodeName=$NODE_NAME" -o json | jq -r '.items[] | select(.metadata.name | test("linuxptp-daemon")).metadata.name')
+            INTERFACE_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG exec $POD_NAME -c linuxptp-daemon-container -- ls /sys/class/gnss/${GNSS_NAME}/device/net/)
+            echo "Discovered interface name: $INTERFACE_NAME"
         else
-           INTERFACE_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ls /sys/class/gnss/${GNSS_NAME}/device/net/)
-           echo "Discovered interface name: $INTERFACE_NAME"
+            INTERFACE_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ls /sys/class/gnss/${GNSS_NAME}/device/net/)
+            echo "Discovered interface name: $INTERFACE_NAME"
         fi
     fi
+
+    if [ -z $MASTER_PTP_CLOCK_DEV ]; then
+        MASTER_PTP_CLOCK_DEV=$(oc --kubeconfig=$LOCAL_KUBECONFIG exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ethtool -T $INTERFACE_NAME | grep 'PTP Hardware Clock:' | sed 's|PTP Hardware Clock\:\s*\([0-9][0-9]*\)|/dev/ptp\1|g')
+    fi
 else
+    if [ -z $MASTER_PTP_CLOCK_DEV ]; then
+        echo "MASTER_PTP_CLOCK_DEV required for offline"
+        exit 1
+    fi
     CLUSTER_UNDER_TEST="offline"
 fi
 
@@ -188,6 +198,9 @@ collect_data(){
     pushd "$COLLECTORPATH" >/dev/null 2>&1
 
     echo "Collecting $DURATION of data. Please wait..."
+    DATE_DURATION=$(echo $DURATION | sed 's|\([0-9][0-9]*\)s|\1 seconds|g' | sed 's|\([0-9][0-9]*\)m|\1 minutes|g'| sed 's|\([0-9][0-9]*\)d|\1 days|g')
+    END_DATE=$(date --date="+$DATE_DURATION" +"%Y-%m-%d %H:%M %Z")
+    echo "expected end: $END_DATE"
     go run main.go collect --interface="$INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="$COLLECTED_DATA_FILE" --use-analyser-format --duration=$DURATION
 
     if [ ${DIFF_LOG} -eq 1 ]
@@ -207,13 +220,13 @@ analyse_data() {
     PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'dpll/time-error' > $DPLL_DEMUXED_PATH
     PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'phc/gm-settings' > $PHC_DEMUXED_PATH
 
-    cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
-["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+    cat <<EOF > $ARTEFACTDIR/testdrive_config.json
+["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE", "$MASTER_PTP_CLOCK_DEV"]
+["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE", "$MASTER_PTP_CLOCK_DEV"]
+["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE", "$MASTER_PTP_CLOCK_DEV"]
+["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE", "$MASTER_PTP_CLOCK_DEV"]
+["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE", "$MASTER_PTP_CLOCK_DEV"]
+["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE", "$MASTER_PTP_CLOCK_DEV"]
 ["sync/G.8272/time-error-in-locked-mode/PHC-to-SYS/RAN/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-A/testimpl.py", "$GNSS_DEMUXED_PATH"]
 ["sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-B/testimpl.py", "$GNSS_DEMUXED_PATH"]
@@ -251,7 +264,7 @@ create_pdf() {
     pushd "$REPORTGENPATH" >/dev/null 2>&1
 
     local config=$ARTEFACTDIR/reportgen_config.json
-    cat << EOF >> $config
+    cat << EOF > $config
 {
     "title": "Synchronization Test Report",
     "subtitle": "T-GM with GNSS",
