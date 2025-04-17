@@ -33,6 +33,7 @@ PHC_DEMUXED_PATH=$ARTEFACTDIR/phc-class.demuxed
 
 ENVJSONRAW="$ARTEFACTDIR/env.json.raw"
 ENVJSON="$DATADIR/env.json"
+DEVJSON="$DATADIR/dev.json"
 TESTJSON="$ARTEFACTDIR/test.json"
 
 ENVJUNIT="$ARTEFACTDIR/env.junit"
@@ -48,17 +49,14 @@ DIFF_LOG=0
 
 usage() {
     cat - <<EOF
-Usage: $(basename "$0") [-i INTERFACE_NAME] [-d DURATION] [-n nodeName] ?kubeconfig?
+Usage: $(basename "$0") [-d DURATION] [-n nodeName] ?kubeconfig?
 
 Arguments:
     kubeconfig: path to the kubeconfig to be used
 
 Options:
-    -i: name of the network interface under test
-    -g: name of the gnss device under test
     -d: how many seconds to run data collection
     -n: nodeName that we need to run the tests on (Required for MNO use case)
-    -j: ptp clock device used for filtering data in DPLL to PHC tests (Required when running in offline mode, otherwise inferred from interface name).
 
 If kubeconfig is not supplied then data collection is skipped:
 a pre-existing dataset must be available in $DATADIR
@@ -69,14 +67,11 @@ EOF
 }
 
 # Parse arguments and options
-while getopts ':i:g:d:l:n:j:' option; do
+while getopts ':i:g:d:l:n:' option; do
     case "$option" in
-    i) INTERFACE_NAME="$OPTARG" ;;
-	g) GNSS_NAME="$OPTARG" ;;
     d) DURATION="$OPTARG" ;;
     l) DIFF_LOG=1 ;;
     n) NODE_NAME="$OPTARG" ;;
-    j) MASTER_PTP_CLOCK_DEV="$OPTARG" ;;
     \?) usage >&2 && exit 1 ;;
     :) usage >&2 && exit 1 ;;
     esac
@@ -89,6 +84,13 @@ done
 shift $((OPTIND - 1))
 
 LOCAL_KUBECONFIG="$1"
+
+detect_configured_cards() {
+    pushd "$COLLECTORPATH" >/dev/null 2>&1
+    echo "Detecting cards configured in ptpconfig. Please wait..."
+    go run main.go detect --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format > $DEVJSON
+}
+
 
 if [ ! -z "$LOCAL_KUBECONFIG" ]; then
 
@@ -107,29 +109,7 @@ if [ ! -z "$LOCAL_KUBECONFIG" ]; then
             exit 1
         fi
     fi
-
-    if [ -z $INTERFACE_NAME ]; then
-        if [[ -z $GNSS_NAME ]]; then
-            GNSS_NAME=gnss0
-        fi
-        if [ ! -z $NODE_NAME ]; then
-            POD_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG get pods --field-selector="spec.nodeName=$NODE_NAME" -o json | jq -r '.items[] | select(.metadata.name | test("linuxptp-daemon")).metadata.name')
-            INTERFACE_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG exec $POD_NAME -c linuxptp-daemon-container -- ls /sys/class/gnss/${GNSS_NAME}/device/net/)
-            echo "Discovered interface name: $INTERFACE_NAME"
-        else
-            INTERFACE_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ls /sys/class/gnss/${GNSS_NAME}/device/net/)
-            echo "Discovered interface name: $INTERFACE_NAME"
-        fi
-    fi
-
-    if [ -z $MASTER_PTP_CLOCK_DEV ]; then
-        MASTER_PTP_CLOCK_DEV=$(oc --kubeconfig=$LOCAL_KUBECONFIG exec daemonset/linuxptp-daemon -c linuxptp-daemon-container -- ethtool -T $INTERFACE_NAME | grep 'PTP Hardware Clock:' | sed 's|PTP Hardware Clock\:\s*\([0-9][0-9]*\)|/dev/ptp\1|g')
-    fi
 else
-    if [ -z $MASTER_PTP_CLOCK_DEV ]; then
-        echo "MASTER_PTP_CLOCK_DEV required for offline"
-        exit 1
-    fi
     CLUSTER_UNDER_TEST="offline"
 fi
 
@@ -138,6 +118,10 @@ mkdir -p $ARTEFACTDIR
 mkdir -p $REPORTARTEFACTDIR
 mkdir -p $LOGARTEFACTDIR
 mkdir -p $PLOTDIR
+
+if [ "$CLUSTER_UNDER_TEST" != "offline" ]; then
+    detect_configured_cards
+fi
 
 pushd "$ANALYSERPATH" >/dev/null 2>&1
 SYNCTESTCOMMIT="$(git show -s --format=%H HEAD)"
@@ -174,6 +158,7 @@ audit_container() {
 EOF
 }
 
+
 verify_env(){
     pushd "$COLLECTORPATH" >/dev/null 2>&1
 
@@ -181,7 +166,8 @@ verify_env(){
     dt=$(date --rfc-3339='seconds' -u)
     local junit_template=$(echo ".[].data + { \"timestamp\": \"$dt\", "duration": 0}")
     set +e
-    go run main.go env verify --interface="$INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format > $ENVJSONRAW
+    LOCAL_INTERFACE_NAME=$(jq '.[] | select(.primary == true).name' $DEVJSON)
+    go run main.go env verify --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format > $ENVJSONRAW
 
     if [ $? -gt 0 ]
     then
@@ -194,14 +180,43 @@ verify_env(){
     popd >/dev/null 2>&1
 }
 
+run_collector(){
+    echo "Running main collector for $1"
+    return $!
+}
+
+run_just_dpll_collector(){
+    echo "Running dpll collector for $1"
+    return $!
+}
+
 collect_data(){
     pushd "$COLLECTORPATH" >/dev/null 2>&1
+    go run main.go start-debug --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG"
 
     echo "Collecting $DURATION of data. Please wait..."
     DATE_DURATION=$(echo $DURATION | sed 's|\([0-9][0-9]*\)s|\1 seconds|g' | sed 's|\([0-9][0-9]*\)m|\1 minutes|g'| sed 's|\([0-9][0-9]*\)d|\1 days|g')
     END_DATE=$(date --date="+$DATE_DURATION" +"%Y-%m-%d %H:%M %Z")
     echo "expected end: $END_DATE"
-    go run main.go collect --interface="$INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="$COLLECTED_DATA_FILE" --use-analyser-format --duration=$DURATION
+
+    declare -a collectorPids=()
+    for row in $(jq -c .[] $DEVJSON); do
+        LOCAL_INTERFACE_NAME=$(echo $row |  jq -r .name)
+        if [ $(echo $row |  jq -r .primary) = true ]; then
+            echo "Starting main collector for ${LOCAL_INTERFACE_NAME}"
+            go run main.go collect --unmanaged-debug-pod --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="$COLLECTED_DATA_FILE" --use-analyser-format --duration=$DURATION  &
+            collectorPids+=($!)
+        else
+            echo "Starting DPLL collector for ${LOCAL_INTERFACE_NAME}"
+            go run main.go collect --unmanaged-debug-pod --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="${COLLECTED_DATA_FILE}_${LOCAL_INTERFACE_NAME}" --use-analyser-format --duration=$DURATION --collector="DPLL" &
+            collectorPids+=($!)
+        fi
+    done
+
+    echo "Waiting on collectors ${collectorPids[@]}"
+    wait -f "${collectorPids[@]}"
+
+    go run main.go stop-debug --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG"
 
     if [ ${DIFF_LOG} -eq 1 ]
     then
@@ -213,6 +228,32 @@ collect_data(){
     popd >/dev/null 2>&1
 }
 
+
+add_phc_tests() {
+    master_ptp_clock_dev=$(echo $1 |  jq -r .ptp_dev)
+    cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
+["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
+["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
+["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
+["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
+["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
+["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
+EOF
+}
+
+add_sma1_tests(){
+    LOCAL_INTERFACE_NAME=$(echo $1 |  jq -r .name)
+    cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
+["sync/G.8272/time-error-in-locked-mode/DPLL-to-SMA1/PRTC-A/testimpl.py",  "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
+["sync/G.8272/time-error-in-locked-mode/DPLL-to-SMA1/PRTC-B/testimpl.py",  "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
+["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-SMA1/PRTC-A/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
+["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-SMA1/PRTC-B/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
+["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-SMA1/PRTC-A/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
+["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-SMA1/PRTC-B/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
+EOF
+}
+
+
 analyse_data() {
     pushd "$ANALYSERPATH" >/dev/null 2>&1
 
@@ -220,13 +261,14 @@ analyse_data() {
     PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'dpll/time-error' > $DPLL_DEMUXED_PATH
     PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'phc/gm-settings' > $PHC_DEMUXED_PATH
 
+    for row in $(jq -c .[] $DEVJSON); do
+        if [ $(echo $row |  jq -r .primary) = false ]; then
+            LOCAL_INTERFACE_NAME=$(echo $row |  jq -r .name)
+            PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux "${COLLECTED_DATA_FILE}_${LOCAL_INTERFACE_NAME}" 'dpll-sma1/time-error' > "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}"
+        fi
+    done
+
     cat <<EOF > $ARTEFACTDIR/testdrive_config.json
-["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE", "$MASTER_PTP_CLOCK_DEV"]
-["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE", "$MASTER_PTP_CLOCK_DEV"]
-["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE", "$MASTER_PTP_CLOCK_DEV"]
-["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE", "$MASTER_PTP_CLOCK_DEV"]
-["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE", "$MASTER_PTP_CLOCK_DEV"]
-["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE", "$MASTER_PTP_CLOCK_DEV"]
 ["sync/G.8272/time-error-in-locked-mode/PHC-to-SYS/RAN/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-A/testimpl.py", "$GNSS_DEMUXED_PATH"]
 ["sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-B/testimpl.py", "$GNSS_DEMUXED_PATH"]
@@ -242,6 +284,14 @@ analyse_data() {
 ["sync/G.8272/wander-MTIE-in-locked-mode/1PPS-to-DPLL/PRTC-B/testimpl.py", "$DPLL_DEMUXED_PATH"]
 ["sync/G.8272/phc/state-transitions/testimpl.py", "$PHC_DEMUXED_PATH"]
 EOF
+
+    for row in $(jq -c .[] $DEVJSON); do
+        add_phc_tests $row
+        if [ $(echo $row |  jq -r .primary) = false ]; then
+            add_sma1_tests $row
+        fi
+    done
+
     env PYTHONPATH=$TDPATH:$PPPATH python3 -m testdrive.run --basedir="$ANALYSERPATH/tests" --imagedir="$PLOTDIR" "$BASEURL_TEST_IDS" $ARTEFACTDIR/testdrive_config.json
 
     popd >/dev/null 2>&1

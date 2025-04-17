@@ -1,0 +1,49 @@
+ifdef::env-github[]
+:important-caption: :heavy_exclamation_mark:
+endif::[]
+
+= G.8272 wander-MTIE-in-locked-mode DPLL-to-SMA1 PRTC-B
+
+https://www.itu.int/rec/T-REC-G.8272/en[G.8272 Section 6.2 Table 4] specifies
+requirements on the accuracy of the wander-MTIE, i.e. wander
+expressed in maximum time interval error or MTIE, for
+https://www.itu.int/rec/T-REC-G.8272/en[PRTC-B] under normal, locked conditions. (For
+the sake of simplicity wander-MTIE will be denoted by MTIE from here on.)
+This test focusses on one observation point in this system: the internal path between the DPLL SMA output from the main card to the input on DPLL SMA input of the following card.
+The purpose of this test is to identify when the MTIE observed at this point is considered independently unacceptable.
+
+IMPORTANT: It is critical to note that the results of this test are only valid
+when both the test environment and the System Under Test (SUT) have been
+independently validated. While requirements on their acceptability are not
+defined here, it is noted that they include timestamping accuracy.
+
+== Goal
+
+Verify that the MTIE of the 1PPS DPLL under
+normal, locked operating conditions is not greater than 100% of the overall MTIE requirement for https://www.itu.int/rec/T-REC-G.8272/en[PRTC-B].
+An observation interval of 10000 seconds covers practically all masks. Note that the test window period for MTIE is equivalent to the maximum observation interval in accordance with ITU-T recommendation https://www.itu.int/rec/T-REC-G.811-199709-I/en[G.811].
+
+== Scope
+
+* Ignore samples in an initial transient window
+* Verify samples in the test window
+
+== Out of scope
+
+* Independent validation of the test environment
+* Independent validation of the SUT
+* Provision SUT
+
+== Acceptance criteria
+
+1. All filtered MTIE samples during each observation interval
+   are less than 100% of overall MTIE accuracy requirement
+2. The time output is locked for the test window
+3. The test window is at least 1000 seconds long
+
+== Test procedure
+
+1. Establish normal, locked conditions per
+   https://www.itu.int/rec/T-REC-G.8272/en[G.8272 Section 6]
+2. Capture at least 1000 seconds of `DPLL` log data
+3. Verify log data meets acceptance criteria

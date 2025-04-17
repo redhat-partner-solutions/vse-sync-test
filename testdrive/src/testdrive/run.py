@@ -141,7 +141,10 @@ def main():
     with open_input(args.input) as fid:
         source = Source(sequence(json.loads(line) for line in fid))
         for test, *test_args in source.next():
-            id_ = builder.build(os.path.dirname(test))
+            url_kwargs = {}
+            if isinstance(test_args[-1], dict):
+                url_kwargs = test_args.pop()
+            id_ = builder.build(os.path.dirname(test), **url_kwargs)
             testimpl = os.path.join(basedir, test)
             start = timenow()
             result = drive(testimpl, *test_args)
