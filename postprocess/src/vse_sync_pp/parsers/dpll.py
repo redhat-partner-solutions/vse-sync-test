@@ -26,3 +26,7 @@ class TimeErrorParser(Parser):
     def parse_line(self, line):
         # DPLL samples come from a fixed format CSV file
         return self.make_parsed(line.split(','))
+
+
+class SMA1TimeErrorParser(TimeErrorParser):
+    id_ = 'dpll-sma1/time-error'

@@ -11,6 +11,7 @@ from . import pmc
 PARSERS = {
     cls.id_: cls for cls in (
         dpll.TimeErrorParser,
+        dpll.SMA1TimeErrorParser,
         gnss.TimeErrorParser,
         ts2phc.TimeErrorParser,
         phc2sys.TimeErrorParser,

@@ -25,9 +25,16 @@ class UriBuilder:
         self._scheme = scheme
         self._authority = authority
         self._head = head
-        self._query = urlencode(kwargs, quote_via=quote_plus) if kwargs else None
+        self._query_kwargs = kwargs
 
-    def build(self, path):
+    def _query(self, kwargs):
+        query_kwargs = self._query_kwargs.copy()
+        query_kwargs.update(kwargs)
+        if len(query_kwargs) == 0:
+            return None
+        return urlencode(query_kwargs, quote_via=quote_plus)
+
+    def build(self, path, **kwargs):
         """Build a URI from `path` relative to this instance's base"""
         tail = path.split("/")
         if tail[0] == "":
@@ -41,7 +48,7 @@ class UriBuilder:
                 self._scheme,
                 self._authority,
                 self._path_sep.join(self._head + tail),
-                self._query,
+                self._query(kwargs),
                 None,  # never supply a fragment
             )
         )
