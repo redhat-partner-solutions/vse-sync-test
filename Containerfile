@@ -21,4 +21,4 @@ WORKDIR ${VSE_DIR}/vse-sync-collection-tools
 RUN go mod vendor
 
 WORKDIR ${VSE_DIR}
-CMD ["./vse-sync-test/cmd/e2e.sh", "-d", "2000s","-n","$PTPNODENAME" ,"/usr/vse/kubeconfig"]
+CMD ["./vse-sync-test/cmd/e2e.sh", "-d", "2000s", "/usr/vse/kubeconfig"]
