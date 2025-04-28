@@ -43,8 +43,7 @@ FULLJUNIT="$OUTPUTDIR/sync_test_report.xml"
 # defaults
 DURATION=2000s
 NAMESPACE=openshift-ptp
-NODE_NAME=""
-GNSS_NAME=
+NODE_NAME="$PTPNODENAME"
 DIFF_LOG=0
 
 usage() {
@@ -84,6 +83,10 @@ done
 shift $((OPTIND - 1))
 
 LOCAL_KUBECONFIG="$1"
+
+if [ ! -z $NODE_NAME ]; then
+    echo "Using node name ${NODE_NAME}"
+fi
 
 detect_configured_cards() {
     pushd "$COLLECTORPATH" >/dev/null 2>&1
