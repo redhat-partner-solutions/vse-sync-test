@@ -1,0 +1,45 @@
+ifdef::env-github[]
+:important-caption: :heavy_exclamation_mark:
+endif::[]
+
+= PTP Hardware Clock (PHC) Clock State Transitions
+
+IMPORTANT: It is critical to note that the results of this test are only valid
+when both the test environment and the System Under Test (SUT) have been
+independently validated. While requirements on their acceptability are not
+defined here, it is noted that they include timestamping accuracy.
+
+== Goal
+
+Verify that the T-GM observed clock class transitions according to the following diagram:
+
+[source, mermaid]
+flowchart TB
+    A(FREERUN) --> B(LOCKED)
+    A --> A
+    B --> C(HOLDOVER_IN_SPEC)
+    B --> B
+    C --> D(HOLDOVER_OUT_OF_SPEC)
+    D --> D
+    C -->B
+    D --> B
+
+== Scope
+
+* T-GM Clock class state transitions
+
+== Out of scope
+
+* Independent validation of the test environment
+* Independent validation of the SUT
+* Provision SUT
+
+== Acceptance criteria
+
+. PTP Hardware Clock (PHC) announced `clockClass` states are valid as per https://www.itu.int/rec/T-REC-G.8275.1-202211-I/e[G.8275.1 section 6.4 Table 3]  and `clockClass` state transitions follow the diagram above
+
+== Test procedure
+
+. Capture at least 1000 seconds of T-GM `clockClass` announcements 
+. Gather the values identifying the announced T-GM `clockClass` for each sample of log data  
+. Ensure that `clockClass` transitions between consecutive samples meet the acceptance criteria

@@ -1,0 +1,46 @@
+G.8273.2 wander-MTIE-in-locked-mode DPLL-to-PHC
+
+
+When the T-BC/T-TSC is operating in locked mode synchronized to both a wander-free time reference at the PTP input and a wander-free frequency
+ reference at the physical layer frequency input, the MTIE and TDEV under constant temperature (within ±1 K) at the PTP and 1 PPS outputs, 
+ 6 Rec. ITU-T G.8273.2/Y.1368.2 (06/2023) measured through a first-order low-pass filter with bandwidth of 0.1 Hz, should meet the limits 
+ in Table 7-4 and Table 7-5 respectively.
+
+
+❗	It is critical to note that the results of this test are only valid when both the test environment and the System Under Test (SUT) have been
+ independently validated. While requirements on their acceptability are not defined here, it is noted that they include timestamping accuracy.
+
+
+
+Goal
+
+Verify that the MTIE introduced between DPLL and PHC under normal, locked operating conditions is not greater than 100% of the overall MTIE requirement.
+An observation interval increased by 10000 seconds covers practically all masks. Note that the test window period for MTIE is equivalent to the maximum
+ observation interval in accordance with ITU-T recommendation
+
+
+Scope
+
+•	Ignore samples in an initial transient window
+•	Verify samples in the test window
+
+
+Out of scope
+
+
+•	Independent validation of the test environment
+•	Independent validation of the SUT
+•	Provision SUT
+
+
+Acceptance criteria
+
+1.	All filtered MTIE samples during each observation interval are less than 100% of overall MTIE accuracy requirement
+2.	The time output is locked for the test window
+3.	The test window is at least 1000 seconds long
+
+
+Test procedure
+1.	Establish normal, locked conditions per G.8273.2 Section 7.4
+2.	Capture at least 1000 seconds
+3.	Verify log data meets acceptance criteria

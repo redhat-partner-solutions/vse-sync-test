@@ -1,0 +1,3 @@
+---
+parameters:
+  min-test-duration/s: 1000
