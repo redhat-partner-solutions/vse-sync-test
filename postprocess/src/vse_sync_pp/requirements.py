@@ -36,4 +36,22 @@ REQUIREMENTS = {
             (None, 100000): lambda t: 1
         }
     },
+    'G.8273.2/Class-C': {
+        'maximum-time-interval-error-in-locked-mode/ns': {
+            (None, 1000): lambda t: 10,
+        },
+        'time-deviation-in-locked-mode/ns': {
+            (None, 1000): lambda t: 2,
+        },
+        'time-error-in-locked-mode/ns': 30,
+    },
+    'workload/RAN': {
+        'time-error-in-locked-mode/ns': 100,
+        'time-deviation-in-locked-mode/ns': {
+            (None, 1000): lambda t: 10
+        },
+        'maximum-time-interval-error-in-locked-mode/ns': {
+            (None, 10000): lambda t: 10
+        }
+    },
 }
