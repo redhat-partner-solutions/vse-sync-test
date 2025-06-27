@@ -4,7 +4,7 @@
 
 """A reference implementation of test:
 
-sync/G.8273.2/wander-MTIE-in-locked-mode/1PPS-to-DPLL
+sync/G.8273.2/MTIE-for-LPF-filtered-series/1PPS-to-DPLL
 
 Use a symbolic link to specify this file as the reference implementation for a test.
 """
