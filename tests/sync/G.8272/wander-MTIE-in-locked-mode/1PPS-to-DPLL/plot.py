@@ -4,7 +4,7 @@
 
 """Plot data for tests under:
 
-sync/G.8272/MTIE-for-LPF-filtered-series/1PPS-to-DPLL
+sync/G.8272/wander-MTIE-in-locked-mode/1PPS-to-DPLL
 
 Use a symbolic link to specify this file as the plotter for a test.
 """

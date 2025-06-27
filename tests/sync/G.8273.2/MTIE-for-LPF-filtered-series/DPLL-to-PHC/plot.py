@@ -4,7 +4,7 @@
 
 """Plot data for tests under:
 
-sync/G.8273.2/MTIE-in-locked-mode/DPLL-to-PHC
+sync/G.8273.2/MTIE-for-LPF-filtered-series/DPLL-to-PHC
 
 Use a symbolic link to specify this file as the plotter for a test.
 """
