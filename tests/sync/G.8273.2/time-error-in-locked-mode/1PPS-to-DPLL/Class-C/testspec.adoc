@@ -1,0 +1,28 @@
+G.8273.2 T_BC time-error-in-locked-mode in Class-C
+ The noise generation of a T-BC and a T-TSC represents the amount of noise produced at the output of the T-BC/T-TSC when there is an ideal input reference packet timing signal. Under normal, locked operating conditions, the time output of the T-BC and the T-TSC should be accurate to within the maximum absolute time error (TE) (max|TE|). This value includes all the noise components, i.e., the constant time error (cTE) and the dynamic time error (dTE) noise generationThe purpose of this test is to identify when the time error of the phase offset observed at this point is considered independently unacceptable.
+❗	It is critical to note that the results of this test are only valid when both the test environment and the System Under Test (SUT) have been independently validated. While requirements on their acceptability are not defined here, it is noted that they include timestamping accuracy.
+
+Goal
+Verify that the unfiltered time error of the 1PPS DPLL under normal, locked operating conditions is not greater than 10% of the overall time output accuracy requirement for T-BC 
+
+Scope
+•	Ignore samples in an initial transient window
+•	Verify samples in the test window
+
+Out of scope
+
+•	Independent validation of the test environment
+•	Independent validation of the SUT
+•	Provision SUT
+
+Acceptance criteria
+
+1.	All samples in the test window have an unfiltered time error of less than 10% of overall time output accuracy requirement
+2.	The 1PPS DPLL is in locked and holdover acquired state for the test window
+3.	The test window is at least 1000 seconds long
+
+Test procedure
+
+1.	Establish normal, locked conditions per G.8273.2 T-BC 
+2.	Capture at least 1000 seconds of DPLL log data
+3.	Verify log data meets acceptance criteria
