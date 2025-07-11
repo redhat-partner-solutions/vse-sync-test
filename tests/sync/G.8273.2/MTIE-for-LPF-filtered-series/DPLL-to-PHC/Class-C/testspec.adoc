@@ -21,7 +21,7 @@ defined here, it is noted that they include timestamping accuracy.
 == Goal
 
 Verify that the MTIE introduced between DPLL and PHC under
-normal, locked operating conditions is not greater than 100% of the overall MTIE requirement for https://www.itu.int/rec/T-REC-G.8272/en[PRTC-A].
+normal, locked operating conditions is not greater than 100% of the overall MTIE requirement for https://www.itu.int/rec/T-REC-G.8273.2/en[Class-C].
 An observation interval of 10000 seconds covers practically all masks. Note that the test window period for MTIE is equivalent to the maximum observation interval in accordance with ITU-T recommendation https://www.itu.int/rec/T-REC-G.811-199709-I/en[G.811].
 
 == Scope

@@ -29,7 +29,7 @@ CONFIG = joinpath(dirname(__file__), 'config.yaml')
 def refimpl(filename, encoding='utf-8'):
     """A reference implementation for tests under:
 
-    sync/G.8272/time-error-in-locked-mode/PHC-to-SYS
+    sync/G.8273.2/time-error-in-locked-mode/PHC-to-SYS
 
     Return a dict with test result, reason, timestamp, duration, and analysis of logs in `filename`.
     """
