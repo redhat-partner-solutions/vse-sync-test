@@ -188,7 +188,7 @@ verify_env(){
     local junit_template=$(echo ".[].data + { \"timestamp\": \"$dt\", "duration": 0}")
     set +e
     LOCAL_INTERFACE_NAME=$(jq '.[] | select(.primary == true).name' $DEVJSON)
-    go run main.go env verify --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format > $ENVJSONRAW
+    go run main.go env verify --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format --clock-type="$TEST_MODE"> $ENVJSONRAW
 
     if [ $? -gt 0 ]
     then
