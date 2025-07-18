@@ -304,6 +304,9 @@ EOF
 analyse_data() {
     pushd "$ANALYSERPATH" >/dev/null 2>&1
 
+    # Get primary interface name for PTP4L tests
+    PRIMARY_INTERFACE_NAME=$(jq -r '.[] | select(.primary == true).name' $DEVJSON)
+
     # Only process GNSS data for T-GM mode (BC doesn't use GNSS constellation tests)
     if [ "$TEST_MODE" = "gm" ]; then
         PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'gnss/time-error' > $GNSS_DEMUXED_PATH
@@ -350,13 +353,17 @@ EOF
 ["sync/G.8273.2/time-error-in-locked-mode/1PPS-to-DPLL/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
 ["sync/G.8273.2/time-error-in-locked-mode/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8273.2/time-error-in-locked-mode/DPLL-to-SMA1/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
+["sync/G.8273.2/time-error-in-locked-mode/PTP4L-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE", "$PRIMARY_INTERFACE_NAME"]
 ["sync/G.8273.2/TDEV-in-locked-mode/1PPS-to-DPLL/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
 ["sync/G.8273.2/TDEV-in-locked-mode/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8273.2/TDEV-in-locked-mode/DPLL-to-SMA1/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
+["sync/G.8273.2/TDEV-in-locked-mode/PTP4L-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE", "$PRIMARY_INTERFACE_NAME"]
 ["sync/G.8273.2/MTIE-for-LPF-filtered-series/1PPS-to-DPLL/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
 ["sync/G.8273.2/MTIE-for-LPF-filtered-series/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8273.2/MTIE-for-LPF-filtered-series/DPLL-to-SMA1/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
+["sync/G.8273.2/MTIE-for-LPF-filtered-series/PTP4L-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE", "$PRIMARY_INTERFACE_NAME"]
 ["sync/G.8273.2/phc/state-transitions/testimpl.py", "$PHC_DEMUXED_PATH"]
+["sync/G.8273.2/ptp4l/port-state-transitions/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 EOF
     fi
 
