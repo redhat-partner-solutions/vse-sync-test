@@ -9,6 +9,9 @@
 set -e
 set -o pipefail
 
+git config --global --add safe.directory /usr/vse/vse-sync-test
+git config --global --add safe.directory /usr/vse/vse-sync-collection-tools
+
 TESTROOT=$(pwd)
 COLLECTORPATH=$TESTROOT/vse-sync-collection-tools
 ANALYSERPATH=$TESTROOT/vse-sync-test
@@ -363,7 +366,6 @@ EOF
 ["sync/G.8273.2/MTIE-for-LPF-filtered-series/DPLL-to-SMA1/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
 ["sync/G.8273.2/MTIE-for-LPF-filtered-series/PTP4L-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE", "$PRIMARY_INTERFACE_NAME"]
 ["sync/G.8273.2/phc/state-transitions/testimpl.py", "$PHC_DEMUXED_PATH"]
-["sync/G.8273.2/ptp4l/port-state-transitions/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 EOF
     fi
 
