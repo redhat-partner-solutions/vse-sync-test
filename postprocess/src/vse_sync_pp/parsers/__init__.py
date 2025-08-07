@@ -18,6 +18,6 @@ PARSERS = {
         phc2sys.TimeErrorParser,
         pmc.ClockClassParser,
         ptp4l.TimeErrorParser,
-        ptp4l.PortStateParser,
+        #ptp4l.PortStateParser,
     )
 }

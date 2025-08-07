@@ -22,7 +22,7 @@ class TimeErrorParser(Parser):
         If `interface` then only parse lines for the specified interface.
         """
         return r''.join((
-        '^ptp4l\[(?P<timestamp>\d+\.?\d*)\]:\s+\[.*\.\d+\.config:?\d*\]\s*(?P<interface>\w+)?\s+offset\s+(?P<offset>-?\d+)\s+(?P<servo_state>s\d)\s+freq\s+(?P<freq_adj>[-+]?\d+)\s*(?:path\s+delay\s+(?P<delay>\d+))?$'
+        r'^ptp4l\[(?P<timestamp>\d+\.?\d*)\]:\s+\[.*\.\d+\.config:?\d*\]\s*(?P<interface>\w+)?\s+offset\s+(?P<offset>-?\d+)\s+(?P<servo_state>s\d)\s+freq\s+(?P<freq_adj>[-+]?\d+)\s*(?:path\s+delay\s+(?P<delay>\d+))?$'
         ))
 
     def __init__(self, interface=None):
@@ -54,11 +54,11 @@ class TimeErrorParser(Parser):
         return None
 
 
-class PortStateParser(Parser):
-    """Parse port state transitions from ptp4l log messages"""
-    id_ = 'ptp4l/port-state'
-    elems = ('timestamp', 'port', 'from_state', 'to_state', 'event')
-    y_name = 'to_state'
+#class PortStateParser(Parser):
+#    """Parse port state transitions from ptp4l log messages"""
+#    id_ = 'ptp4l/port-state'
+#    elems = ('timestamp', 'port', 'from_state', 'to_state', 'event')
+#    y_name = 'to_state'
     parsed = namedtuple('Parsed', elems)
 
     @staticmethod
