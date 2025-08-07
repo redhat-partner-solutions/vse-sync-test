@@ -356,15 +356,15 @@ EOF
 ["sync/G.8273.2/time-error-in-locked-mode/1PPS-to-DPLL/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
 ["sync/G.8273.2/time-error-in-locked-mode/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8273.2/time-error-in-locked-mode/DPLL-to-SMA1/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
-["sync/G.8273.2/time-error-in-locked-mode/PTP4L-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE", "$PRIMARY_INTERFACE_NAME"]
+["sync/G.8273.2/time-error-in-locked-mode/PTP4L-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8273.2/TDEV-in-locked-mode/1PPS-to-DPLL/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
 ["sync/G.8273.2/TDEV-in-locked-mode/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8273.2/TDEV-in-locked-mode/DPLL-to-SMA1/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
-["sync/G.8273.2/TDEV-in-locked-mode/PTP4L-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE", "$PRIMARY_INTERFACE_NAME"]
+["sync/G.8273.2/TDEV-in-locked-mode/PTP4L-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8273.2/MTIE-for-LPF-filtered-series/1PPS-to-DPLL/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
 ["sync/G.8273.2/MTIE-for-LPF-filtered-series/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8273.2/MTIE-for-LPF-filtered-series/DPLL-to-SMA1/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
-["sync/G.8273.2/MTIE-for-LPF-filtered-series/PTP4L-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE", "$PRIMARY_INTERFACE_NAME"]
+["sync/G.8273.2/MTIE-for-LPF-filtered-series/PTP4L-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8273.2/phc/state-transitions/testimpl.py", "$PHC_DEMUXED_PATH"]
 EOF
     fi
