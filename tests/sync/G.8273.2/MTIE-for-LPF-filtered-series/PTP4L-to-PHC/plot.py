@@ -65,7 +65,7 @@ def main():
         'title': "PTP4L-to-PHC MTIE (filtered)",
     }
     # Python exits with error code 1 on EPIPE
-    if not print_loj(output):
+    if not print_loj([item]):
         sys.exit(1)
 
 
