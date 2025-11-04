@@ -46,7 +46,7 @@ DURATION=2000s
 NAMESPACE=openshift-ptp
 NODE_NAME="$PTPNODENAME"
 DIFF_LOG=0
-TEST_MODE="$$PTPTESTMODE"  # Options: "gm" (T-GM), "bc" (boundary clock)
+TEST_MODE_SINGLE="${PTPTESTMODE:-GM}"  # Options: "gm" (T-GM), "bc" (boundary clock)
 
 usage() {
     cat - <<EOF
