@@ -54,7 +54,7 @@ class TestTimeErrorParserWithInterface(TestCase, metaclass=ParserTestBuilder):
 def constructor():
     return TimeErrorParser(interface="eth3")
     
-    constructor_id_ = "ptp4l/time-error"
+    id_ = "ptp4l/time-error"
     elems = ("timestamp", "interface", "offset", "servo_state", "freq_adj", "path_delay")
     accept = (
         (
