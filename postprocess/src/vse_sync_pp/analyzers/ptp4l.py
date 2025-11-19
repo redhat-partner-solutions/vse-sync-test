@@ -34,4 +34,3 @@ class MaxTimeIntervalErrorAnalyzer(MaxTimeIntervalErrorAnalyzerBase):
 
     def test(self, data):
         return self._check_missing_samples(data, *super().test(data))
-

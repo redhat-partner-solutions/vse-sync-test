@@ -50,7 +50,6 @@ def main():
     """Run this test and print test output as JSON to stdout"""
     aparser = ArgumentParser(description=main.__doc__)
     aparser.add_argument('input', help="log file to analyze")
-    #aparser.add_argument('interface', help="interface to capture", default="")
     args = aparser.parse_args()
     output = refimpl(args.input, "")
     # Python exits with error code 1 on EPIPE
@@ -60,3 +59,4 @@ def main():
 
 if __name__ == '__main__':
     main() 
+    

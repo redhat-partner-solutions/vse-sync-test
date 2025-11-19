@@ -52,4 +52,3 @@ class TimeErrorParser(Parser):
                 matched.group(6),  # path_delay
             ))
         return None
-

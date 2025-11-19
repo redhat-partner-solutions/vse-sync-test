@@ -74,7 +74,21 @@ class TestTimeErrorParserWithInterface(TestCase, metaclass=ParserTestBuilder):
             (Decimal("681011.839"), "enp2s0f0", -23947, "s0", 0, 11350),
         ),
         ( 
-            ""
+            "ptp4l[681011.839]: [ptp4l.0.config] eth3 offset -23947 s0 freq +0 path delay 11350",
+            (Decimal("681011.839"), "eth3", -23947, "s0", 0, 11350),
+        ),
+        (
+            "ptp4l[681011.839]: [ptp4l.0.config] eth3 offset -23947 s0 freq +0 path delay 11350",
+            (Decimal("681011.839"), "eth3", -23947, "s0", 0, 11350),
+        ),
+        (
+            "ptp4l[681011.839]: [ptp4l.0.config] eth3 offset -23947 s0 freq +0 path delay 11350",
+            (Decimal("681011.839"), "eth3", -23947, "s0", 0, 11350),
+        ),
+        (
+            "ptp4l[681011.839]: [ptp4l.0.config] eth3 offset -23947 s0 freq +0 path delay 11350",
+            (Decimal("681011.839"), "eth3", -23947, "s0", 0, 11350),
+        ),
     )
     reject = ()
     discard = ()
