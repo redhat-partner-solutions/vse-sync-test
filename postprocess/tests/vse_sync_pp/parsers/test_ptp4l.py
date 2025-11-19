@@ -51,11 +51,11 @@ class TestTimeErrorParser(TestCase, metaclass=ParserTestBuilder):
 class TestTimeErrorParserWithInterface(TestCase, metaclass=ParserTestBuilder):
     """Test cases for vse_sync_pp.parsers.ptp4l.TimeErrorParser with specific interface"""
 
-def constructor():  
-    return TimeErrorParser(interface="eth3")    
-    
+    def constructor():
+        return TimeErrorParser(interface="eth3")
+
     id_ = "ptp4l/time-error"
-    elems = ("timestamp", "interface", "terror", "state", "freq", "path_delay") 
+    elems = ("timestamp", "interface", "terror", "state", "freq", "path_delay")
     accept = (
         (
             "ptp4l[681011.839]: [ptp4l.0.config:0] eth3 offset -23947 s0 freq +0 path delay 11350",
@@ -74,8 +74,8 @@ def constructor():
             "ptp4l[681011.839]: [ptp4l.0.config] enp2s0f0 offset -23947 s0 freq +0 path delay 11350",
             (Decimal("681011.839"), "enp2s0f0", -23947, "s0", 0, 11350),
         ),
-        ( 
-            "ptp4l[681011.839]: [ptp4l.0.config] eth3 offset -23947 s0 freq +0 path delay 11350",   
+        (
+            "ptp4l[681011.839]: [ptp4l.0.config] eth3 offset -23947 s0 freq +0 path delay 11350",
             (Decimal("681011.839"), "eth3", -23947, "s0", 0, 11350),
         ),
         (
