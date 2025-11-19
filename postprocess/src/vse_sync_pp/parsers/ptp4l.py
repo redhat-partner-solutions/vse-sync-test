@@ -29,7 +29,7 @@ class TimeErrorParser(Parser):
         r'(?P<servo_state>s\d)\s+',  # servo state
         r'freq\s+(?P<freq_adj>[-+]?\d+)\s*', 
         r'(?:path\s+delay\s+(?P<delay>\d+))?$',  # path delay
-        ))
+    ))
 
     def __init__(self, interface=None):
         super().__init__()
