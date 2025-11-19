@@ -21,7 +21,6 @@ ANALYZERS = {
         phc2sys.TimeErrorAnalyzer,
         pmc.ClockStateAnalyzer,
         ptp4l.TimeErrorAnalyzer,
-        ptp4l.PortStateAnalyzer,
         gnss.TimeDeviationAnalyzer,
         ppsdpll.TimeDeviationAnalyzer,
         ts2phc.TimeDeviationAnalyzer,
