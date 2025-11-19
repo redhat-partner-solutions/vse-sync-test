@@ -7,7 +7,6 @@ from decimal import Decimal
 
 from vse_sync_pp.parsers.ptp4l import (
     TimeErrorParser,
-    PortStateParser,
 )
 
 from .test_parser import ParserTestBuilder
@@ -52,8 +51,10 @@ class TestTimeErrorParser(TestCase, metaclass=ParserTestBuilder):
 class TestTimeErrorParserWithInterface(TestCase, metaclass=ParserTestBuilder):
     """Test cases for vse_sync_pp.parsers.ptp4l.TimeErrorParser with specific interface"""
 
-    constructor = lambda: TimeErrorParser(interface="eth3")
-    id_ = "ptp4l/time-error"
+def constructor():
+    return TimeErrorParser(interface="eth3")
+    
+id_ = "ptp4l/time-error"
     elems = ("timestamp", "interface", "terror", "state", "freq", "path_delay")
     accept = (
         (
@@ -74,7 +75,7 @@ class TestTimeErrorParserWithInterface(TestCase, metaclass=ParserTestBuilder):
             (Decimal("681011.839"), "enp2s0f0", -23947, "s0", 0, 11350),
         ),
         ( 
-            "ptp4l[681011.839]: [ptp4l.0.config] eth3 offset -23947 s0 freq +0 path delay 11350",
+            "ptp4l[681011.839]: [ptp4l.0.config] eth3 offset -23947 s0 freq +0 path delay 11350",   
             (Decimal("681011.839"), "eth3", -23947, "s0", 0, 11350),
         ),
         (
@@ -92,3 +93,4 @@ class TestTimeErrorParserWithInterface(TestCase, metaclass=ParserTestBuilder):
     )
     reject = ()
     discard = ()
+    
