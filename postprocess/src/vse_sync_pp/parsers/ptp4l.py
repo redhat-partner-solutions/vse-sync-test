@@ -22,14 +22,14 @@ class TimeErrorParser(Parser):
         If `interface` then only parse lines for the specified interface.
         """
         return r''.join((
-        r'^ptp4l\[(?P<timestamp>\d+\.?\d*)\]:\s+',  
+        r'^ptp4l\[(?P<timestamp>\d+\.?\d*)\]:\s+',
         r'\[.*\.\d+\.config:?\d*\]\s*',
         r'(?P<interface>\w+)?\s+',
-        r'offset\s+(?P<offset>-?\d+)\s+',  # offset
-        r'(?P<servo_state>s\d)\s+',  # servo state
+        r'offset\s+(?P<offset>-?\d+)\s+', 
+        r'(?P<servo_state>s\d)\s+', 
         r'freq\s+(?P<freq_adj>[-+]?\d+)\s*', 
-        r'(?:path\s+delay\s+(?P<delay>\d+))?$',  # path delay
-    ))
+        r'(?:path\s+delay\s+(?P<delay>\d+))?$'
+        ))
 
     def __init__(self, interface=None):
         super().__init__()
