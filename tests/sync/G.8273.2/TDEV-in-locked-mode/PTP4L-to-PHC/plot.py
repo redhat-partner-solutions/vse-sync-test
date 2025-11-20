@@ -4,7 +4,7 @@
 
 """Plot data for tests under:
 
-sync/G.8273.2/TDEV-in-locked-mode/1PPS-to-DPLL
+sync/G.8273.2/TDEV-in-locked-mode/PTP4L-to-PHC
 
 Use a symbolic link to specify this file as the plotter for a test.
 """
@@ -22,8 +22,8 @@ from collections import namedtuple
 
 from vse_sync_pp.plot import Plotter, Axis
 
-from vse_sync_pp.parsers.dpll import SMA1TimeErrorParser
-from vse_sync_pp.analyzers.ppsdpll import TimeDeviationAnalyzer
+from vse_sync_pp.parsers.ptp4l import TimeErrorParser
+from vse_sync_pp.analyzers.ptp4l import TimeDeviationAnalyzer
 from vse_sync_pp.analyzers.analyzer import Config
 
 CONFIG = joinpath(dirname(__file__), 'config.yaml')
@@ -48,18 +48,22 @@ def main():
     aparser = ArgumentParser(description=main.__doc__)
     aparser.add_argument('prefix', help="output image prefix")
     aparser.add_argument('input')
+    #aparser.add_argument('interface', help="interface to capture", default=None)
+
     args = aparser.parse_args()
+
     # get data for plot from analyzer
-    parser = SMA1TimeErrorParser()
+    parser = TimeErrorParser("")
     analyzer = TimeDeviationAnalyzer(Config.from_yaml(CONFIG))
     with open_input(args.input) as fid:
-        analyzer.collect(*parser.canonical(fid))
+        analyzer.collect(*parser.parse(fid))
+
     # plot data
     output = f'{args.prefix}.png'
     plot_data(analyzer, output)
     item = {
         'path': output,
-        'title': "DPLL-to-SMA1 TDEV (filtered)",
+        'title': "PTP4L-to-PHC TDEV (filtered)",
     }
     # Python exits with error code 1 on EPIPE
     if not print_loj([item]):

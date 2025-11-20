@@ -3,4 +3,4 @@ requirements: G.8273.2/Class-C
 parameters:
   transient-period/s: 300
   min-test-duration/s: 1000
-  time-error-limit/%: 12.5
+  time-deviation-limit/%: 100

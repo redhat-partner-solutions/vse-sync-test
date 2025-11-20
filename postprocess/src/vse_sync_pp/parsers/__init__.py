@@ -7,6 +7,7 @@ from . import gnss
 from . import ts2phc
 from . import phc2sys
 from . import pmc
+from . import ptp4l
 
 PARSERS = {
     cls.id_: cls for cls in (
@@ -16,5 +17,6 @@ PARSERS = {
         ts2phc.TimeErrorParser,
         phc2sys.TimeErrorParser,
         pmc.ClockClassParser,
+        ptp4l.TimeErrorParser,
     )
 }

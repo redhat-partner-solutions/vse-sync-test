@@ -9,6 +9,7 @@
 set -e
 set -o pipefail
 
+
 TESTROOT=$(pwd)
 COLLECTORPATH=$TESTROOT/vse-sync-collection-tools
 ANALYSERPATH=$TESTROOT/vse-sync-test
@@ -45,10 +46,11 @@ DURATION=2000s
 NAMESPACE=openshift-ptp
 NODE_NAME="$PTPNODENAME"
 DIFF_LOG=0
+TEST_MODE="${PTPTESTMODE:-GM}" # Options: "gm" (T-GM), "bc" (boundary clock)
 
 usage() {
     cat - <<EOF
-Usage: $(basename "$0") [-d DURATION] [-n nodeName] ?kubeconfig?
+Usage: $(basename "$0") [-d DURATION] [-n nodeName] [-m MODE] ?kubeconfig?
 
 Arguments:
     kubeconfig: path to the kubeconfig to be used
@@ -56,30 +58,35 @@ Arguments:
 Options:
     -d: how many seconds to run data collection
     -n: nodeName that we need to run the tests on (Required for MNO use case)
+    -m: test mode - "gm" (T-GM only), "bc" (boundary clock only) (default: gm)
 
 If kubeconfig is not supplied then data collection is skipped:
 a pre-existing dataset must be available in $DATADIR
 
 Example usage:
-    $(basename "$0") ~/kubeconfig
+    $(basename "$0") ~/kubeconfig                    # Run T-GM tests (default)
+    $(basename "$0") -m gm ~/kubeconfig              # Run T-GM tests only
+    $(basename "$0") -m bc ~/kubeconfig              # Run boundary clock tests only
 EOF
 }
 
 # Parse arguments and options
-while getopts ':i:g:d:l:n:' option; do
+while getopts ':d:l:n:m:' option; do
     case "$option" in
     d) DURATION="$OPTARG" ;;
     l) DIFF_LOG=1 ;;
     n) NODE_NAME="$OPTARG" ;;
+    m) TEST_MODE="$OPTARG" ;;
     \?) usage >&2 && exit 1 ;;
     :) usage >&2 && exit 1 ;;
     esac
-
-    if [[ -n $INTERFACE_NAME && -n $GNSS_NAME ]]; then
-        echo "Only provide one out of interface name or gnss name"
-        exit 1
-    fi
 done
+
+# Validate test mode
+case "$TEST_MODE" in
+    "gm"|"bc") ;;
+    *) echo "Error: Invalid test mode '$TEST_MODE'. Must be 'gm' or 'bc'." >&2 && usage >&2 && exit 1 ;;
+esac
 shift $((OPTIND - 1))
 
 LOCAL_KUBECONFIG="$1"
@@ -87,6 +94,12 @@ LOCAL_KUBECONFIG="$1"
 if [ ! -z $NODE_NAME ]; then
     echo "Using node name ${NODE_NAME}"
 fi
+
+echo "Test mode: $TEST_MODE"
+case "$TEST_MODE" in
+    "gm") echo "  Running T-GM tests only (G.8272)" ;;
+    "bc") echo "  Running boundary clock tests only (G.8273.2)" ;;
+esac
 
 detect_configured_cards() {
     pushd "$COLLECTORPATH" >/dev/null 2>&1
@@ -134,7 +147,13 @@ BASEURL_ENV_IDS=https://github.com/redhat-partner-solutions/vse-sync-test/tree/m
 BASEURL_TEST_IDS=https://github.com/redhat-partner-solutions/vse-sync-test/tree/main/tests/
 BASEURL_SPECS=https://github.com/redhat-partner-solutions/vse-sync-test/blob/$SYNCTESTCOMMIT/
 
-FINALREPORTPATH=${OUTPUTDIR}"/test_report_"${CLUSTER_UNDER_TEST}"_"$(date -u +'%Y%m%dT%H%M%SZ')"_"$(echo "$SYNCTESTCOMMIT" | head -c 8)".pdf"
+# Set report filename suffix based on test mode
+case "$TEST_MODE" in
+    "gm") MODE_SUFFIX="_TGM" ;;
+    "bc") MODE_SUFFIX="_TBC_TSC" ;;
+esac
+
+FINALREPORTPATH=${OUTPUTDIR}"/test_report"${MODE_SUFFIX}"_"${CLUSTER_UNDER_TEST}"_"$(date -u +'%Y%m%dT%H%M%SZ')"_"$(echo "$SYNCTESTCOMMIT" | head -c 8)".pdf"
 
 audit_repo() {
     pushd "$1" >/dev/null 2>&1
@@ -170,7 +189,7 @@ verify_env(){
     local junit_template=$(echo ".[].data + { \"timestamp\": \"$dt\", "duration": 0}")
     set +e
     LOCAL_INTERFACE_NAME=$(jq '.[] | select(.primary == true).name' $DEVJSON)
-    go run main.go env verify --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format > $ENVJSONRAW
+    go run main.go env verify --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format --clock-type="$TEST_MODE"> $ENVJSONRAW
 
     if [ $? -gt 0 ]
     then
@@ -207,11 +226,11 @@ collect_data(){
         LOCAL_INTERFACE_NAME=$(echo $row |  jq -r .name)
         if [ $(echo $row |  jq -r .primary) = true ]; then
             echo "Starting main collector for ${LOCAL_INTERFACE_NAME}"
-            go run main.go collect --unmanaged-debug-pod --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="$COLLECTED_DATA_FILE" --use-analyser-format --duration=$DURATION  &
+            go run main.go collect --unmanaged-debug-pod --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="$COLLECTED_DATA_FILE" --use-analyser-format --duration=$DURATION  --clock-type="$TEST_MODE" &
             collectorPids+=($!)
         else
             echo "Starting DPLL collector for ${LOCAL_INTERFACE_NAME}"
-            go run main.go collect --unmanaged-debug-pod --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="${COLLECTED_DATA_FILE}_${LOCAL_INTERFACE_NAME}" --use-analyser-format --duration=$DURATION --collector="DPLL" &
+            go run main.go collect --unmanaged-debug-pod --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="${COLLECTED_DATA_FILE}_${LOCAL_INTERFACE_NAME}" --use-analyser-format --duration=$DURATION --clock-type="$TEST_MODE" --collector="DPLL" &
             collectorPids+=($!)
         fi
     done
@@ -234,7 +253,10 @@ collect_data(){
 
 add_phc_tests() {
     master_ptp_clock_dev=$(echo $1 |  jq -r .ptp_dev)
-    cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
+    
+    # Add G.8272 PHC tests if mode is "gm"
+    if [ "$TEST_MODE" = "gm" ]; then
+        cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
 ["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
 ["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
 ["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
@@ -242,11 +264,24 @@ add_phc_tests() {
 ["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
 ["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
 EOF
+    fi
+
+    # Add G.8273.2 PHC tests if mode is "bc"
+    if [ "$TEST_MODE" = "bc" ]; then
+        cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
+["sync/G.8273.2/time-error-in-locked-mode/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
+["sync/G.8273.2/TDEV-in-locked-mode/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
+["sync/G.8273.2/MTIE-for-LPF-filtered-series/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
+EOF
+    fi
 }
 
 add_sma1_tests(){
     LOCAL_INTERFACE_NAME=$(echo $1 |  jq -r .name)
-    cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
+    
+    # Add G.8272 SMA1 tests if mode is "gm"
+    if [ "$TEST_MODE" = "gm" ]; then
+        cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
 ["sync/G.8272/time-error-in-locked-mode/DPLL-to-SMA1/PRTC-A/testimpl.py",  "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
 ["sync/G.8272/time-error-in-locked-mode/DPLL-to-SMA1/PRTC-B/testimpl.py",  "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
 ["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-SMA1/PRTC-A/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
@@ -254,13 +289,30 @@ add_sma1_tests(){
 ["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-SMA1/PRTC-A/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
 ["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-SMA1/PRTC-B/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
 EOF
+    fi
+
+    # Add G.8273.2 SMA1 tests if mode is "bc"
+    if [ "$TEST_MODE" = "bc" ]; then
+        cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
+["sync/G.8273.2/time-error-in-locked-mode/DPLL-to-SMA1/Class-C/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
+["sync/G.8273.2/TDEV-in-locked-mode/DPLL-to-SMA1/Class-C/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
+["sync/G.8273.2/MTIE-for-LPF-filtered-series/DPLL-to-SMA1/Class-C/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
+EOF
+    fi
 }
 
 
 analyse_data() {
     pushd "$ANALYSERPATH" >/dev/null 2>&1
 
-    PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'gnss/time-error' > $GNSS_DEMUXED_PATH
+    # Get primary interface name for PTP4L tests
+    PRIMARY_INTERFACE_NAME=$(jq -r '.[] | select(.primary == true).name' $DEVJSON)
+
+    # Only process GNSS data for T-GM mode (BC doesn't use GNSS constellation tests)
+    if [ "$TEST_MODE" = "gm" ]; then
+        PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'gnss/time-error' > $GNSS_DEMUXED_PATH
+    fi
+    
     PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'dpll/time-error' > $DPLL_DEMUXED_PATH
     PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'phc/gm-settings' > $PHC_DEMUXED_PATH
 
@@ -271,7 +323,13 @@ analyse_data() {
         fi
     done
 
+    # Create test configuration based on selected mode
     cat <<EOF > $ARTEFACTDIR/testdrive_config.json
+EOF
+
+    # Add G.8272 tests if mode is "gm"
+    if [ "$TEST_MODE" = "gm" ]; then
+        cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
 ["sync/G.8272/time-error-in-locked-mode/PHC-to-SYS/RAN/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-A/testimpl.py", "$GNSS_DEMUXED_PATH"]
 ["sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-B/testimpl.py", "$GNSS_DEMUXED_PATH"]
@@ -287,6 +345,27 @@ analyse_data() {
 ["sync/G.8272/wander-MTIE-in-locked-mode/1PPS-to-DPLL/PRTC-B/testimpl.py", "$DPLL_DEMUXED_PATH"]
 ["sync/G.8272/phc/state-transitions/testimpl.py", "$PHC_DEMUXED_PATH"]
 EOF
+    fi
+
+    # Add G.8273.2 tests if mode is "bc"
+    if [ "$TEST_MODE" = "bc" ]; then
+        cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
+["sync/G.8273.2/time-error-in-locked-mode/PHC-to-SYS/RAN/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8273.2/time-error-in-locked-mode/1PPS-to-DPLL/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
+["sync/G.8273.2/time-error-in-locked-mode/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8273.2/time-error-in-locked-mode/DPLL-to-SMA1/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
+["sync/G.8273.2/time-error-in-locked-mode/PTP4L-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8273.2/TDEV-in-locked-mode/1PPS-to-DPLL/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
+["sync/G.8273.2/TDEV-in-locked-mode/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8273.2/TDEV-in-locked-mode/DPLL-to-SMA1/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
+["sync/G.8273.2/TDEV-in-locked-mode/PTP4L-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8273.2/MTIE-for-LPF-filtered-series/1PPS-to-DPLL/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
+["sync/G.8273.2/MTIE-for-LPF-filtered-series/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8273.2/MTIE-for-LPF-filtered-series/DPLL-to-SMA1/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
+["sync/G.8273.2/MTIE-for-LPF-filtered-series/PTP4L-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8273.2/phc/state-transitions/testimpl.py", "$PHC_DEMUXED_PATH"]
+EOF
+    fi
 
     for row in $(jq -c .[] $DEVJSON); do
         add_phc_tests $row
@@ -305,8 +384,15 @@ create_junit() {
         env PYTHONPATH=$TDPATH python3 -m testdrive.junit.create --hostname="$CLUSTER_UNDER_TEST" --baseurl-ids="$BASEURL_ENV_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "Environment" - \
         > $ENVJUNIT
 
+    # Set test suite name based on test mode
+    local test_suite_name
+    case "$TEST_MODE" in
+        "gm") test_suite_name="T-GM Tests" ;;
+        "bc") test_suite_name="T-BC/T-TSC Tests" ;;
+    esac
+
     cat $TESTJSON | \
-        env PYTHONPATH=$TDPATH python3 -m testdrive.junit.create --hostname="$CLUSTER_UNDER_TEST" --baseurl-ids="$BASEURL_TEST_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "T-GM Tests" - \
+        env PYTHONPATH=$TDPATH python3 -m testdrive.junit.create --hostname="$CLUSTER_UNDER_TEST" --baseurl-ids="$BASEURL_TEST_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "$test_suite_name" - \
         > $TESTJUNIT
 
     env PYTHONPATH=$TDPATH python3 -m testdrive.junit.merge --prettify $ARTEFACTDIR/*.junit > $FULLJUNIT
@@ -316,11 +402,18 @@ create_pdf() {
 
     pushd "$REPORTGENPATH" >/dev/null 2>&1
 
+    # Set subtitle based on test mode
+    local subtitle
+    case "$TEST_MODE" in
+        "gm") subtitle="T-GM with GNSS" ;;
+        "bc") subtitle="T-BC/T-TSC" ;;
+    esac
+
     local config=$ARTEFACTDIR/reportgen_config.json
     cat << EOF > $config
 {
     "title": "Synchronization Test Report",
-    "subtitle": "T-GM with GNSS",
+    "subtitle": "$subtitle",
     "repositories": {
         "vse-sync-test.git": "$ANALYSERPATH/tests/"
     },
@@ -329,7 +422,7 @@ create_pdf() {
             "repository": "vse-sync-test.git",
             "baseurl": "${BASEURL_ENV_IDS}"
         },
-        "T-GM Tests": {
+        "Synchronization Tests": {
             "repository": "vse-sync-test.git",
             "baseurl": "${BASEURL_TEST_IDS}"
         }
@@ -347,6 +440,8 @@ EOF
     fi
 
     mv $REPORTARTEFACTDIR/test-report.pdf $FINALREPORTPATH
+
+    echo "Generated PDF report: $FINALREPORTPATH"
 
     popd >/dev/null 2>&1
 }

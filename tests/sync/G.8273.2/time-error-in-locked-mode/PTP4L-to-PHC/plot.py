@@ -4,7 +4,7 @@
 
 """Plot data for tests under:
 
-sync/G.8273.2/time-error-in-locked-mode/1PPS-to-DPLL
+sync/G.8273.2/time-error-in-locked-mode/PTP4L-to-PHC
 
 Use a symbolic link to specify this file as the plotter for a test.
 """
@@ -17,7 +17,7 @@ from vse_sync_pp.common import (
     print_loj,
 )
 
-from vse_sync_pp.parsers.dpll import TimeErrorParser
+from vse_sync_pp.parsers.ptp4l import TimeErrorParser
 from vse_sync_pp.plot import Plotter, Axis, TIMESERIES
 
 
@@ -31,17 +31,18 @@ def main():
     aparser = ArgumentParser(description=main.__doc__)
     aparser.add_argument('prefix', help="output image prefix")
     aparser.add_argument('input')
+    #aparser.add_argument('interface', help="interface to capture", default=None)
     args = aparser.parse_args()
-    parser = TimeErrorParser()
+    parser = TimeErrorParser("")
     plotter = Plotter(TIMESERIES, Axis("Unfiltered Time Error (ns)", parser.y_name))
     with open_input(args.input) as fid:
-        for parsed in parser.canonical(fid, relative=True):
+        for parsed in parser.parse(fid, relative=True):
             plotter.append(parsed)
     output = f'{args.prefix}.png'
     plotter.plot(output)
     item = {
         'path': output,
-        'title': "1PPS-to-DPLL Time Error (unfiltered)",
+        'title': "PTP4L-to-PHC Time Error (unfiltered)",
     }
     # Python exits with error code 1 on EPIPE
     if not print_loj([item]):

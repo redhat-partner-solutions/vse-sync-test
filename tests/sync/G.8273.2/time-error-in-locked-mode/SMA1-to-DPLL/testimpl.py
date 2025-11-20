@@ -4,7 +4,7 @@
 
 """A reference implementation for tests under:
 
-sync/G.8273.2/TDEV-in-locked-mode/1PPS-to-DPLL
+sync/G.8273.2/time-error-in-locked-mode/DPLL-to-SMA1
 
 Use a symbolic link to specify this file as the reference implementation for a test.
 """
@@ -20,7 +20,7 @@ from vse_sync_pp.common import (
 )
 
 from vse_sync_pp.parsers.dpll import SMA1TimeErrorParser
-from vse_sync_pp.analyzers.ppsdpll import TimeDeviationAnalyzer
+from vse_sync_pp.analyzers.ppsdpll import TimeErrorAnalyzer
 from vse_sync_pp.analyzers.analyzer import Config
 
 CONFIG = joinpath(dirname(__file__), 'config.yaml')
@@ -29,13 +29,13 @@ CONFIG = joinpath(dirname(__file__), 'config.yaml')
 def refimpl(filename, encoding='utf-8'):
     """A reference implementation for tests under:
 
-    sync/G.8273.2/TDEV-in-locked-mode/1PPS-to-DPLL
+    sync/G.8273.2/time-error-in-locked-mode/DPLL-to-SMA1
 
     Input `filename` accepted MUST be in canonical format.
     Return a dict with test result, reason, timestamp, duration, and analysis of logs in `filename`.
     """
     parser = SMA1TimeErrorParser()
-    analyzer = TimeDeviationAnalyzer(Config.from_yaml(CONFIG))
+    analyzer = TimeErrorAnalyzer(Config.from_yaml(CONFIG))
     with open_input(filename, encoding=encoding) as fid:
         for parsed in parser.canonical(fid):
             analyzer.collect(parsed)

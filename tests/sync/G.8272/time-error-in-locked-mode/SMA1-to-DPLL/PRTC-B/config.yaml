@@ -1,6 +1,6 @@
 ---
-requirements: G.8273.2/Class-C
+requirements: G.8272/PRTC-B
 parameters:
   transient-period/s: 300
   min-test-duration/s: 1000
-  time-error-limit/%: 5
+  time-error-limit/%: 12.5
