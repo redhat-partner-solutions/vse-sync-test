@@ -46,8 +46,9 @@ class TestTimeErrorParser(TestCase, metaclass=ParserTestBuilder):
         # Invalid timestamp
         "ptp4l[invalid]: [ptp4l.0.config] eth3 offset -23947 s0 freq +0 path delay 11350",
     )
-    reject = () 
-    discard = () 
+    reject = ()
+    discard = ()
+
 
 class TestTimeErrorParserWithInterface(TestCase, metaclass=ParserTestBuilder):
     """Test cases for vse_sync_pp.parsers.ptp4l.TimeErrorParser with specific interface"""
