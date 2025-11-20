@@ -48,7 +48,23 @@ class TestTimeErrorParser(TestCase, metaclass=ParserTestBuilder):
     )
     reject = ()
     discard = ()
-
+    file = (
+        "\n".join(
+            (
+                "foo",
+                "ptp4l[681011.839]: [ptp4l.0.config:0] eth3 offset -23947 s0 freq +0 path delay 11350",
+                "bar",
+                "ptp4l[681011.839]: [ptp4l.0.config:0] eth0 offset 1150 s1 freq +25000 path delay 8500",
+                "baz",
+                "ptp4l[681012.840]: [ptp4l.1.config:1] enp2s0f0 offset -4552 s2 freq -30035 path delay 10385",
+            )
+        ),
+        (
+            (Decimal("681011.839"), "eth3", -23947, "s0", 0, 11350),
+            (Decimal("681011.839"), "eth0", 1150, "s1", 25000, 8500),
+            (Decimal("681012.840"), "enp2s0f0", -4552, "s2", -30035, 10385),
+        ),
+    )
 
 class TestTimeErrorParserWithInterface(TestCase, metaclass=ParserTestBuilder):
     """Test cases for vse_sync_pp.parsers.ptp4l.TimeErrorParser with specific interface"""
@@ -95,3 +111,20 @@ class TestTimeErrorParserWithInterface(TestCase, metaclass=ParserTestBuilder):
     )
     reject = ()
     discard = ()
+    file = (
+        "\n".join(
+            (
+                "foo",
+                "ptp4l[681011.839]: [ptp4l.0.config:0] eth3 offset -23947 s0 freq +0 path delay 11350",
+                "bar",
+                "ptp4l[681011.839]: [ptp4l.0.config:0] eth0 offset 1150 s1 freq +25000 path delay 8500",
+                "baz",
+                "ptp4l[681012.840]: [ptp4l.1.config:1] enp2s0f0 offset -4552 s2 freq -30035 path delay 10385",
+            )
+        ),
+        (
+            (Decimal("681011.839"), "eth3", -23947, "s0", 0, 11350),
+            (Decimal("681011.839"), "eth0", 1150, "s1", 25000, 8500),
+            (Decimal("681012.840"), "enp2s0f0", -4552, "s2", -30035, 10385),
+        ),
+    )
