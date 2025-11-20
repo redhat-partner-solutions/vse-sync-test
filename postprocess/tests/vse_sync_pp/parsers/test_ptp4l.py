@@ -70,8 +70,8 @@ class TestTimeErrorParser(TestCase, metaclass=ParserTestBuilder):
 class TestTimeErrorParserWithInterface(TestCase, metaclass=ParserTestBuilder):
     """Test cases for vse_sync_pp.parsers.ptp4l.TimeErrorParser with specific interface"""
 
-    def constructor():
-        return TimeErrorParser(interface="eth3")
+    constructor = TimeErrorParser
+    constructor_kwargs = {"interface": "eth3"}
 
     id_ = "ptp4l/time-error"
     elems = ("timestamp", "interface", "terror", "state", "freq", "path_delay")
