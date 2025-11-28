@@ -294,7 +294,7 @@ EOF
     # Add G.8273.2 SMA1 tests if mode is "bc"
     if [ "$TEST_MODE" = "bc" ]; then
         cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
-["sync/G.8273.2/time-error-in-locked-mode/SMA1-to-DPLL/Class-C/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
+["sync/G.8273.2/time-error-in-locked-mode/DPLL-to-SMA1/Class-C/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
 ["sync/G.8273.2/TDEV-in-locked-mode/DPLL-to-SMA1/Class-C/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
 ["sync/G.8273.2/MTIE-for-LPF-filtered-series/DPLL-to-SMA1/Class-C/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
 EOF
