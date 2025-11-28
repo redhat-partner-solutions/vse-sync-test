@@ -4,7 +4,7 @@
 
 """Plot data for tests under:
 
-sync/G.8272/time-error-in-locked-mode/1PPS-to-DPLL
+sync/G.8272/time-error-in-locked-mode/SMA1-to-DPLL
 
 Use a symbolic link to specify this file as the plotter for a test.
 """

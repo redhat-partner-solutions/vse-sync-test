@@ -4,7 +4,7 @@
 
 """A reference implementation for tests under:
 
-sync/G.8272/time-error-in-locked-mode/DPLL-to-SMA1
+sync/G.8272/time-error-in-locked-mode/SMA1-to-DPLL
 
 Use a symbolic link to specify this file as the reference implementation for a test.
 """
@@ -29,7 +29,7 @@ CONFIG = joinpath(dirname(__file__), 'config.yaml')
 def refimpl(filename, encoding='utf-8'):
     """A reference implementation for tests under:
 
-    sync/G.8272/time-error-in-locked-mode/DPLL-to-SMA1
+    sync/G.8272/time-error-in-locked-mode/SMA1-to-DPLL
 
     Input `filename` accepted MUST be in canonical format.
     Return a dict with test result, reason, timestamp, duration, and analysis of logs in `filename`.
