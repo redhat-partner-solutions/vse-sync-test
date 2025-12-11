@@ -253,7 +253,7 @@ collect_data(){
 
 add_phc_tests() {
     master_ptp_clock_dev=$(echo $1 |  jq -r .ptp_dev)
-    
+
     # Add G.8272 PHC tests if mode is "gm"
     if [ "$TEST_MODE" = "gm" ]; then
         cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
@@ -278,12 +278,12 @@ EOF
 
 add_sma1_tests(){
     LOCAL_INTERFACE_NAME=$(echo $1 |  jq -r .name)
-    
+
     # Add G.8272 SMA1 tests if mode is "gm"
     if [ "$TEST_MODE" = "gm" ]; then
         cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
-["sync/G.8272/time-error-in-locked-mode/DPLL-to-SMA1/PRTC-A/testimpl.py",  "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
-["sync/G.8272/time-error-in-locked-mode/DPLL-to-SMA1/PRTC-B/testimpl.py",  "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
+["sync/G.8272/time-error-in-locked-mode/SMA1-to-DPLL/PRTC-A/testimpl.py",  "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
+["sync/G.8272/time-error-in-locked-mode/SMA1-to-DPLL/PRTC-B/testimpl.py",  "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
 ["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-SMA1/PRTC-A/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
 ["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-SMA1/PRTC-B/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
 ["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-SMA1/PRTC-A/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
@@ -312,7 +312,7 @@ analyse_data() {
     if [ "$TEST_MODE" = "gm" ]; then
         PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'gnss/time-error' > $GNSS_DEMUXED_PATH
     fi
-    
+
     PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'dpll/time-error' > $DPLL_DEMUXED_PATH
     PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'phc/gm-settings' > $PHC_DEMUXED_PATH
 
