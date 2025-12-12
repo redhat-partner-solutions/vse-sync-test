@@ -19,8 +19,6 @@ from vse_sync_pp.common import (
     print_loj,
 )
 
-
-
 RE_PMC_SET = re.compile(
     r'SET GRANDMASTER_SETTINGS_NP(?:\s+[^"]*?)?'
     r'clockClass\s+(?P<class>\d+)\s+'
