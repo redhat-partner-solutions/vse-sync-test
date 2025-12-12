@@ -18,6 +18,19 @@ from vse_sync_pp.common import (
     open_input,
     print_loj,
 )
+try:
+    # Prefer shared mapping if available (may require pyyaml via analyzers import chain)
+    from vse_sync_pp.analyzers.pmc import CLOCK_ACCURACY_FOR_CLOCK_CLASS  # type: ignore
+except Exception:
+    # Fallback mapping to avoid external dependencies at runtime
+    CLOCK_ACCURACY_FOR_CLOCK_CLASS = {
+        248: "0xFE",  # FREERUN
+        6: "0x21",    # LOCKED
+        7: "0xFE",    # HOLDOVER_IN_SPEC
+        140: "0xFE",  # HOLDOVER_OUT_SPEC1
+        150: "0xFE",  # HOLDOVER_OUT_SPEC2
+        160: "0xFE",  # HOLDOVER_OUT_SPEC3
+    }
 
 RE_PMC_SET = re.compile(
     r'SET GRANDMASTER_SETTINGS_NP(?:\s+[^"]*?)?'
@@ -84,13 +97,14 @@ def refimpl(filename, encoding='utf-8'):
             if pmc:
                 try:
                     cls = int(pmc.group('class'))
-                    acc = pmc.group('accuracy').lower()
+                    acc = pmc.group('accuracy')
                 except Exception:
                     continue
-                observed_pairs.append((cls, acc))
-                if cls == 6 and acc != '0x21':
-                    illegal_accuracy = True
-                if cls == 248 and acc != '0xfe':
+                acc_norm = acc.upper()
+                observed_pairs.append((cls, acc_norm))
+                # If we have a known mapping for this class, validate accuracy against it
+                expected_acc = CLOCK_ACCURACY_FOR_CLOCK_CLASS.get(cls)
+                if expected_acc is not None and acc_norm != expected_acc.upper():
                     illegal_accuracy = True
 
     if not observed_pairs:
@@ -116,7 +130,7 @@ def refimpl(filename, encoding='utf-8'):
     if illegal_accuracy:
         return {
             'result': False,
-            'reason': 'illegal clock accuracy for observed clock class',
+            'reason': 'illegal clock accuracy',
             'timestamp': None if first_ts is None else first_ts.isoformat() + 'Z',
             'duration': 0 if (first_ts is None or last_ts is None) else (last_ts - first_ts).total_seconds(),
             'analysis': {

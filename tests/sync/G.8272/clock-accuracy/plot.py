@@ -40,7 +40,7 @@ def main():
     args = aparser.parse_args()
 
     # Build simple series of (sample index, clock_class)
-    Parsed = namedtuple('Parsed', ('idx', 'clock_class'))
+    Parsed = namedtuple('Parsed', ('idx', 'clock_class', 'clock_accuracy'))
     plotter = Plotter(Axis("sample", "idx"), Axis("clock class", "clock_class"))
 
     idx = 0
@@ -50,9 +50,10 @@ def main():
                 m = RE_PMC_SET.search(line)
                 try:
                     cls = int(m.group('class'))
+                    acc = m.group('accuracy').upper()
                 except Exception:
                     continue
-                plotter.append(Parsed(idx, cls))
+                plotter.append(Parsed(idx, cls, acc))
                 idx += 1
 
     # Generate plot
@@ -60,7 +61,7 @@ def main():
     plotter.plot_scatter(output)
     item = {
         'path': output,
-        'title': "Clock class (SET GRANDMASTER_SETTINGS_NP)",
+        'title': "Clock class (SET GRANDMASTER_SETTINGS_NP) with parsed clockAccuracy",
     }
     # Python exits with error code 1 on EPIPE
     if not print_loj([item]):
