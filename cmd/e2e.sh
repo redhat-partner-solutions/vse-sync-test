@@ -130,6 +130,7 @@ else
 fi
 
 mkdir -p $DATADIR
+rm -rf $ARTEFACTDIR/*
 mkdir -p $ARTEFACTDIR
 mkdir -p $REPORTARTEFACTDIR
 mkdir -p $LOGARTEFACTDIR
@@ -446,17 +447,22 @@ EOF
     popd >/dev/null 2>&1
 }
 
-audit_container > $DATADIR/repo_audit
 if [ ! -z "$LOCAL_KUBECONFIG" ]; then
-    echo "Running Collection"
-    verify_env
-    collect_data
+    if [ -z "$(find $OUTPUTDIR/*.* -type f 2> /dev/null)" ] | [ -z "$(find $DATADIR/* -type f 2> /dev/null)" ]; then
+        echo "Running Collection"
+        verify_env
+        collect_data
+    else
+        echo "Cannot run data collection when $OUTPUTDIR contains files."
+        exit 1
+    fi
 else
     echo "Skipping data collection"
 fi
 analyse_data > $TESTJSON
 create_junit
 create_pdf
+audit_container > $DATADIR/repo_audit
 
 # Make exit code indicate test results rather than successful completion.
 if grep -Eq '(errors|failures)=\"([^0].*?)\"' $FULLJUNIT; then
