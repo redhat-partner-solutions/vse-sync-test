@@ -4,7 +4,7 @@
 
 """Plot data for tests under:
 
-sync/G.8273.2/MTIE-for-LPF-filtered-series/1PPS-to-DPLL
+sync/G.8272/wander-MTIE-in-locked-mode/1PPS-to-DPLL
 
 Use a symbolic link to specify this file as the plotter for a test.
 """
@@ -61,7 +61,7 @@ def main():
     plot_data(analyzer, output)
     item = {
         'path': output,
-        'title': "DPLL-to-SMA1 MTIE (filtered)",
+        'title': "SMA1-to-DPLL MTIE (filtered)",
     }
     # Python exits with error code 1 on EPIPE
     if not print_loj([item]):
