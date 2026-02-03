@@ -41,7 +41,7 @@ def main():
     plotter.plot(output)
     item = {
         'path': output,
-        'title': "DPLL-to-SMA1 Time Error (unfiltered)",
+        'title': "SMA1-to-DPLL Time Error (unfiltered)",
     }
     # Python exits with error code 1 on EPIPE
     if not print_loj([item]):

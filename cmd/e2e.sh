@@ -284,19 +284,19 @@ add_sma1_tests(){
         cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
 ["sync/G.8272/time-error-in-locked-mode/SMA1-to-DPLL/PRTC-A/testimpl.py",  "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
 ["sync/G.8272/time-error-in-locked-mode/SMA1-to-DPLL/PRTC-B/testimpl.py",  "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
-["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-SMA1/PRTC-A/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
-["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-SMA1/PRTC-B/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
-["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-SMA1/PRTC-A/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
-["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-SMA1/PRTC-B/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
+["sync/G.8272/wander-TDEV-in-locked-mode/SMA1-to-DPLL/PRTC-A/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
+["sync/G.8272/wander-TDEV-in-locked-mode/SMA1-to-DPLL/PRTC-B/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
+["sync/G.8272/wander-MTIE-in-locked-mode/SMA1-to-DPLL/PRTC-A/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
+["sync/G.8272/wander-MTIE-in-locked-mode/SMA1-to-DPLL/PRTC-B/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
 EOF
     fi
 
     # Add G.8273.2 SMA1 tests if mode is "bc"
     if [ "$TEST_MODE" = "bc" ]; then
         cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
-["sync/G.8273.2/time-error-in-locked-mode/DPLL-to-SMA1/Class-C/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
-["sync/G.8273.2/TDEV-in-locked-mode/DPLL-to-SMA1/Class-C/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
-["sync/G.8273.2/MTIE-for-LPF-filtered-series/DPLL-to-SMA1/Class-C/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
+["sync/G.8273.2/time-error-in-locked-mode/SMA1-to-DPLL/Class-C/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
+["sync/G.8273.2/TDEV-in-locked-mode/SMA1-to-DPLL/Class-C/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
+["sync/G.8273.2/MTIE-for-LPF-filtered-series/SMA1-to-DPLL/Class-C/testimpl.py", "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}", $1]
 EOF
     fi
 }
@@ -353,15 +353,15 @@ EOF
 ["sync/G.8273.2/time-error-in-locked-mode/PHC-to-SYS/RAN/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8273.2/time-error-in-locked-mode/1PPS-to-DPLL/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
 ["sync/G.8273.2/time-error-in-locked-mode/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8273.2/time-error-in-locked-mode/DPLL-to-SMA1/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
+["sync/G.8273.2/time-error-in-locked-mode/SMA1-to-DPLL/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
 ["sync/G.8273.2/time-error-in-locked-mode/PTP4L-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8273.2/TDEV-in-locked-mode/1PPS-to-DPLL/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
-["sync/G.8273.2/TDEV-in-locked-mode/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8273.2/TDEV-in-locked-mode/DPLL-to-SMA1/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
+["sync/G.8273.2/TDEV-in-locked-mode/SMA1-to-DPLL/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8273.2/TDEV-in-locked-mode/SMA1-to-DPLL/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
 ["sync/G.8273.2/TDEV-in-locked-mode/PTP4L-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8273.2/MTIE-for-LPF-filtered-series/1PPS-to-DPLL/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
 ["sync/G.8273.2/MTIE-for-LPF-filtered-series/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8273.2/MTIE-for-LPF-filtered-series/DPLL-to-SMA1/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
+["sync/G.8273.2/MTIE-for-LPF-filtered-series/SMA1-to-DPLL/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
 ["sync/G.8273.2/MTIE-for-LPF-filtered-series/PTP4L-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8273.2/phc/state-transitions/testimpl.py", "$PHC_DEMUXED_PATH"]
 EOF
