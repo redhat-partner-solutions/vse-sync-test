@@ -23,7 +23,7 @@ class TimeErrorParser(Parser):
         """
         return r''.join((
             r'^ptp4l\[(?P<timestamp>\d+\.?\d*)\]:\s+',
-            r'\[.*\.\d+\.config:?\d*\]\s*',
+            r'(?:\[.*\.\d+\.config:?\d*\]\s*)?',
             r'(?P<interface>\w+)?\s+',
             r'offset\s+(?P<offset>-?\d+)\s+',
             r'(?P<servo_state>s\d)\s+',
