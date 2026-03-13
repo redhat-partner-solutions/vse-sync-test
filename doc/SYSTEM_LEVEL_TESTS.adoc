@@ -1,0 +1,108 @@
+= System-Level Tests
+
+This document describes the system-level synchronization tests in this repository, including their purpose, duration requirements, and how they differ from functional tests.
+
+== Overview
+
+System-level tests validate the *complete end-to-end* synchronization path from the PTP Hardware Clock (PHC) to the System Clock (SYS). They verify that the aggregate time accuracy at the system output meets the full requirements specified in ITU-T G.8272 (for T-GM) and G.8273.2 (for T-BC/T-TSC).
+
+Unlike functional tests that validate individual segments of the sync chain with partial budgets, system-level tests apply the *full 100%* requirement at the final observation point.
+
+== Test Duration
+
+=== Summary
+
+| Parameter | Value | Description |
+|-----------|-------|-------------|
+| Transient period | 300 seconds | Initial samples ignored (lock acquisition) |
+| Minimum test duration | 1000 seconds | Minimum valid test window |
+| Recommended data collection | 2000 seconds | Default E2E collection duration |
+| Total minimum run time | ~1300 seconds | Transient + minimum test window |
+
+=== Detailed Duration Parameters
+
+All system-level tests use the following configuration parameters (defined in `config.yaml`):
+
+* *transient-period/s: 300* — Samples in the first 300 seconds are discarded to allow the system to reach steady-state locked conditions.
+* *min-test-duration/s: 1000* — The test window (after transient) must be at least 1000 seconds for a valid result.
+
+=== E2E Pipeline
+
+When running the full end-to-end pipeline (`cmd/e2e.sh`):
+
+* *Default collection duration: 2000 seconds* — Data is collected for 2000 seconds by default.
+* *Configurable* — Use the `-d` option to override: `./e2e.sh -d 3600s ~/kubeconfig`
+
+For TDEV and MTIE tests, longer collection periods may improve coverage of higher tau (observation window) values. Per ITU-T G.811, the minimum test window for TDEV is twelve times the maximum observation interval; the implementation uses a 1000-second minimum for practical test execution.
+
+== Test Naming Convention
+
+All system-level tests use the prefix `system-test-PHC-to-SYS` to distinguish them from functional tests. The test identifier format is:
+
+```
+sync/<standard>/<metric>/system-test-PHC-to-SYS/<variant>
+```
+
+Example: `sync/G.8272/time-error-in-locked-mode/system-test-PHC-to-SYS/PRTC-A`
+
+== Available System-Level Tests
+
+=== G.8272 (T-GM Mode)
+
+| Test Path | Metric | Variants | Standard |
+|-----------|--------|----------|----------|
+| time-error-in-locked-mode/system-test-PHC-to-SYS | Time error | RAN, PRTC-A, PRTC-B | G.8272 |
+| wander-TDEV-in-locked-mode/system-test-PHC-to-SYS | TDEV | PRTC-A, PRTC-B | G.8272 |
+| wander-MTIE-in-locked-mode/system-test-PHC-to-SYS | MTIE | PRTC-A, PRTC-B | G.8272 |
+
+=== G.8273.2 (T-BC/T-TSC Mode)
+
+| Test Path | Metric | Variants | Standard |
+|-----------|--------|----------|----------|
+| time-error-in-locked-mode/system-test-PHC-to-SYS | Time error | RAN, Class-C | G.8273.2 |
+| TDEV-in-locked-mode/system-test-PHC-to-SYS | TDEV | Class-C | G.8273.2 |
+| MTIE-for-LPF-filtered-series/system-test-PHC-to-SYS | MTIE | Class-C | G.8273.2 |
+
+== Data Source
+
+All system-level tests use `phc2sys` log data from the PTP daemon. The log captures the time error between the PHC and the system clock, which represents the final output of the synchronization chain.
+
+* *Input file:* `linuxptp-daemon-container.log` (or equivalent PTP daemon log)
+* *Parser:* phc2sys TimeErrorParser
+
+== Functional vs System-Level Tests
+
+| Aspect | Functional Tests | System-Level Tests |
+|--------|------------------|-------------------|
+| **Observation point** | Single segment (e.g., DPLL-to-PHC) | Full PHC-to-SYS path |
+| **Budget** | Partial (e.g., 10%) | Full 100% |
+| **Purpose** | Isolate failures to specific segments | Validate end-to-end compliance |
+| **Data source** | Varies by segment (ts2phc, GNSS, dpll, etc.) | phc2sys logs only |
+| **Test prefix** | Segment name (e.g., DPLL-to-PHC) | system-test-PHC-to-SYS |
+
+== Running System-Level Tests
+
+System-level tests are included automatically when running the E2E pipeline:
+
+* *T-GM mode:* `./e2e.sh -m gm ~/kubeconfig`
+* *T-BC mode:* `./e2e.sh -m bc ~/kubeconfig`
+
+To extend the collection duration for more robust TDEV/MTIE results:
+
+```
+./e2e.sh -d 3600s -m gm ~/kubeconfig
+```
+
+== Acceptance Criteria (Common)
+
+All system-level tests share these acceptance criteria:
+
+1. All samples in the test window meet the full (100%) requirement for the metric.
+2. The time output remains locked for the entire test window.
+3. The test window is at least 1000 seconds long (after transient).
+
+== References
+
+* https://www.itu.int/rec/T-REC-G.8272/en[ITU-T G.8272] — Timing characteristics of a primary reference time clock
+* https://www.itu.int/rec/T-REC-G.8273.2/en[ITU-T G.8273.2] — Timing characteristics of telecom boundary clocks and telecom time slave clocks
+* https://www.itu.int/rec/T-REC-G.811-199709-I/en[ITU-T G.811] — Timing requirements at the outputs of primary reference clocks

@@ -330,7 +330,13 @@ EOF
     # Add G.8272 tests if mode is "gm"
     if [ "$TEST_MODE" = "gm" ]; then
         cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
-["sync/G.8272/time-error-in-locked-mode/PHC-to-SYS/RAN/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/time-error-in-locked-mode/system-test-PHC-to-SYS/RAN/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/time-error-in-locked-mode/system-test-PHC-to-SYS/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/time-error-in-locked-mode/system-test-PHC-to-SYS/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/wander-TDEV-in-locked-mode/system-test-PHC-to-SYS/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/wander-TDEV-in-locked-mode/system-test-PHC-to-SYS/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/wander-MTIE-in-locked-mode/system-test-PHC-to-SYS/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/wander-MTIE-in-locked-mode/system-test-PHC-to-SYS/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-A/testimpl.py", "$GNSS_DEMUXED_PATH"]
 ["sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-B/testimpl.py", "$GNSS_DEMUXED_PATH"]
 ["sync/G.8272/wander-TDEV-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-A/testimpl.py", "$GNSS_DEMUXED_PATH"]
@@ -350,7 +356,10 @@ EOF
     # Add G.8273.2 tests if mode is "bc"
     if [ "$TEST_MODE" = "bc" ]; then
         cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
-["sync/G.8273.2/time-error-in-locked-mode/PHC-to-SYS/RAN/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8273.2/time-error-in-locked-mode/system-test-PHC-to-SYS/RAN/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8273.2/time-error-in-locked-mode/system-test-PHC-to-SYS/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8273.2/TDEV-in-locked-mode/system-test-PHC-to-SYS/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8273.2/MTIE-for-LPF-filtered-series/system-test-PHC-to-SYS/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8273.2/time-error-in-locked-mode/1PPS-to-DPLL/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
 ["sync/G.8273.2/time-error-in-locked-mode/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8273.2/time-error-in-locked-mode/SMA1-to-DPLL/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
