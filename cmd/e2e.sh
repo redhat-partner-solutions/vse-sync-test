@@ -9,6 +9,9 @@
 set -e
 set -o pipefail
 
+git config --global --add safe.directory /usr/vse/vse-sync-test
+git config --global --add safe.directory /usr/vse/vse-sync-collection-tools
+
 
 TESTROOT=$(pwd)
 COLLECTORPATH=$TESTROOT/vse-sync-collection-tools
@@ -189,7 +192,7 @@ verify_env(){
     local junit_template=$(echo ".[].data + { \"timestamp\": \"$dt\", "duration": 0}")
     set +e
     LOCAL_INTERFACE_NAME=$(jq '.[] | select(.primary == true).name' $DEVJSON)
-    go run main.go env verify --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format --clock-type="$TEST_MODE"> $ENVJSONRAW
+    go run main.go env verify --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format> $ENVJSONRAW
 
     if [ $? -gt 0 ]
     then
@@ -226,11 +229,11 @@ collect_data(){
         LOCAL_INTERFACE_NAME=$(echo $row |  jq -r .name)
         if [ $(echo $row |  jq -r .primary) = true ]; then
             echo "Starting main collector for ${LOCAL_INTERFACE_NAME}"
-            go run main.go collect --unmanaged-debug-pod --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="$COLLECTED_DATA_FILE" --use-analyser-format --duration=$DURATION  --clock-type="$TEST_MODE" &
+            go run main.go collect --unmanaged-debug-pod --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="$COLLECTED_DATA_FILE" --use-analyser-format --duration=$DURATION &
             collectorPids+=($!)
         else
             echo "Starting DPLL collector for ${LOCAL_INTERFACE_NAME}"
-            go run main.go collect --unmanaged-debug-pod --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="${COLLECTED_DATA_FILE}_${LOCAL_INTERFACE_NAME}" --use-analyser-format --duration=$DURATION --clock-type="$TEST_MODE" --collector="DPLL" &
+            go run main.go collect --unmanaged-debug-pod --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="${COLLECTED_DATA_FILE}_${LOCAL_INTERFACE_NAME}" --use-analyser-format --duration=$DURATION --collector="DPLL" &
             collectorPids+=($!)
         fi
     done
@@ -330,13 +333,13 @@ EOF
     # Add G.8272 tests if mode is "gm"
     if [ "$TEST_MODE" = "gm" ]; then
         cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
-["sync/G.8272/time-error-in-locked-mode/system-test-PHC-to-SYS/RAN/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8272/time-error-in-locked-mode/system-test-PHC-to-SYS/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8272/time-error-in-locked-mode/system-test-PHC-to-SYS/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8272/wander-TDEV-in-locked-mode/system-test-PHC-to-SYS/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8272/wander-TDEV-in-locked-mode/system-test-PHC-to-SYS/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8272/wander-MTIE-in-locked-mode/system-test-PHC-to-SYS/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8272/wander-MTIE-in-locked-mode/system-test-PHC-to-SYS/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/time-error-in-locked-mode/PHC-to-SYS/RAN/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/time-error-in-locked-mode/PHC-to-SYS/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/time-error-in-locked-mode/PHC-to-SYS/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/wander-TDEV-in-locked-mode/PHC-to-SYS/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/wander-TDEV-in-locked-mode/PHC-to-SYS/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/wander-MTIE-in-locked-mode/PHC-to-SYS/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/wander-MTIE-in-locked-mode/PHC-to-SYS/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-A/testimpl.py", "$GNSS_DEMUXED_PATH"]
 ["sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-B/testimpl.py", "$GNSS_DEMUXED_PATH"]
 ["sync/G.8272/wander-TDEV-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-A/testimpl.py", "$GNSS_DEMUXED_PATH"]
@@ -356,10 +359,10 @@ EOF
     # Add G.8273.2 tests if mode is "bc"
     if [ "$TEST_MODE" = "bc" ]; then
         cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
-["sync/G.8273.2/time-error-in-locked-mode/system-test-PHC-to-SYS/RAN/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8273.2/time-error-in-locked-mode/system-test-PHC-to-SYS/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8273.2/TDEV-in-locked-mode/system-test-PHC-to-SYS/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8273.2/MTIE-for-LPF-filtered-series/system-test-PHC-to-SYS/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8273.2/time-error-in-locked-mode/PHC-to-SYS/RAN/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8273.2/time-error-in-locked-mode/PHC-to-SYS/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8273.2/TDEV-in-locked-mode/PHC-to-SYS/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8273.2/MTIE-for-LPF-filtered-series/PHC-to-SYS/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8273.2/time-error-in-locked-mode/1PPS-to-DPLL/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
 ["sync/G.8273.2/time-error-in-locked-mode/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8273.2/time-error-in-locked-mode/SMA1-to-DPLL/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
