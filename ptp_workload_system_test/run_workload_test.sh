@@ -35,14 +35,18 @@ if oc --kubeconfig="$KUBECONFIG" cp "$SCRIPT_DIR/ptp_workload.py" "$NAMESPACE/$P
         python3 /tmp/ptp_workload.py --duration "$DURATION" --phc-dev "$PHC_DEV" --stress-cpu
 else
     # Fallback: inline minimal workload (no Python/copy needed)
+    # Try phc_ctl from PATH or /usr/sbin; parse offset with flexible grep
     oc --kubeconfig="$KUBECONFIG" exec -n "$NAMESPACE" "$POD" -c "$CONTAINER" -- \
-        sh -c "D=$DURATION; P=$PHC_DEV; L=100; max=0; samples=0; start=\$(date +%s);
+        sh -c "PHC_CMD=\$(command -v phc_ctl 2>/dev/null || echo /usr/sbin/phc_ctl);
+        D=$DURATION; P=$PHC_DEV; L=100; max=0; samples=0; start=\$(date +%s);
         while [ \$(date +%s) -lt \$((start + D)) ]; do
-            ns=\$(phc_ctl \$P cmp 2>&1 | grep -oE 'offset[^0-9]*-?[0-9]+[[:space:]]*ns' | grep -oE '[0-9]+' | head -1);
+            raw=\$(\$PHC_CMD \$P cmp 2>&1);
+            ns=\$(echo \"\$raw\" | grep -oE 'offset[^0-9]*-?[0-9]+' | grep -oE '-?[0-9]+' | head -1);
+            ns=\${ns#-};
             [ -n \"\$ns\" ] && { samples=\$((samples+1)); [ \$ns -gt \$max ] && max=\$ns; };
             sleep 0.1;
         done;
         [ \$max -lt \$L ] && r=pass || r=fail;
-        echo \"{\\\"result\\\":\\\"\$r\\\",\\\"max_time_error_ns\\\":\$max,\\\"samples\\\":\$samples,\\\"limit_ns\\\":\$L}\";
+        echo \"{\\\"result\\\":\\\"\$r\\\",\\\"reason\\\":\\\"samples \\\$samples max_ns \\\$max limit \\\$L ns\\\",\\\"max_time_error_ns\\\":\$max,\\\"samples\\\":\$samples,\\\"limit_ns\\\":\$L,\\\"duration\\\":\$D}\";
         [ \"\$r\" = pass ]"
 fi

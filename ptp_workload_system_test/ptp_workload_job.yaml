@@ -42,8 +42,11 @@ spec:
               max=0; samples=0
               start=$(date +%s)
               echo "Running PTP workload for ${D}s on $PHC" >&2
+              PHC_CMD=$(command -v phc_ctl 2>/dev/null || echo /usr/sbin/phc_ctl)
               while [ $(date +%s) -lt $((start + D)) ]; do
-                ns=$(phc_ctl $PHC cmp 2>&1 | grep -oE 'offset[^0-9]*-?[0-9]+[[:space:]]*ns' | grep -oE '[0-9]+' | head -1)
+                raw=$($PHC_CMD $PHC cmp 2>&1)
+                ns=$(echo "$raw" | grep -oE 'offset[^0-9]*-?[0-9]+' | grep -oE '-?[0-9]+' | head -1)
+                ns=${ns#-}
                 [ -n "$ns" ] && { samples=$((samples+1)); [ $ns -gt $max ] && max=$ns; }
                 sleep 0.1
               done

@@ -46,13 +46,16 @@ elif $STRESS; then
     stress_pid=$!
 fi
 
+# Try phc_ctl from PATH or /usr/sbin (containers may have it in /usr/sbin)
+PHC_CMD=$(command -v phc_ctl 2>/dev/null || echo /usr/sbin/phc_ctl)
+
 # Main loop: read PTP, record
 while true; do
     now=$(date +%s.%N)
     [[ $(echo "$now >= $end" | bc 2>/dev/null || echo 0) -eq 1 ]] && break
 
-    out=$(phc_ctl "$PHC_DEV" cmp 2>&1) || true
-    ns=$(echo "$out" | grep -oE "offset[^0-9]*-?[0-9]+[[:space:]]*ns" | grep -oE "-?[0-9]+" | head -1)
+    out=$("$PHC_CMD" "$PHC_DEV" cmp 2>&1) || true
+    ns=$(echo "$out" | grep -oE "offset[^0-9]*-?[0-9]+" | grep -oE "-?[0-9]+" | head -1)
     if [[ -n "$ns" ]]; then
         ns=${ns#-}
         samples=$((samples + 1))

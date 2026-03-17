@@ -44,22 +44,29 @@ class WorkloadResult:
 
 def read_phc_cmp(phc_dev: str) -> Optional[int]:
     """Read PHC vs CLOCK_REALTIME offset using phc_ctl cmp. Returns offset in ns or None."""
-    try:
-        out = subprocess.run(
-            ["phc_ctl", phc_dev, "cmp"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        # phc_ctl often writes to stderr
-        text = out.stdout + out.stderr
-        # Parse: "offset from CLOCK_REALTIME is -37001639797ns" or "offset is 123 ns"
-        match = re.search(r"offset\s+(?:from\s+CLOCK_REALTIME\s+is\s+)?(-?\d+)\s*ns", text, re.I)
-        if match:
-            return abs(int(match.group(1)))
-        return None
-    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
-        return None
+    # Try phc_ctl from PATH, then common locations (containers may have it in /usr/sbin)
+    for cmd in (["phc_ctl", phc_dev, "cmp"], ["/usr/sbin/phc_ctl", phc_dev, "cmp"]):
+        try:
+            out = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            text = out.stdout + out.stderr
+            # Multiple patterns for different phc_ctl output formats
+            for pattern in (
+                r"offset\s+(?:from\s+CLOCK_REALTIME\s+is\s+)?(-?\d+)\s*ns",  # "offset from CLOCK_REALTIME is -37001639797ns"
+                r"offset\s+is\s+(-?\d+)\s*ns",  # "offset is 123 ns"
+                r"offset[^0-9]*(-?\d+)\s*ns",   # permissive
+                r"(-?\d+)\s*ns\s*(?:offset|$)", # "123 ns" near offset
+            ):
+                match = re.search(pattern, text, re.I)
+                if match:
+                    return abs(int(match.group(1)))
+        except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+            continue
+    return None
 
 
 def stress_worker(stop_event: threading.Event, cpu_load: float = 0.5) -> None:
@@ -109,8 +116,10 @@ def run_workload(
     result.samples = len(samples)
     if not samples:
         result.result = "error"
-        result.reason = "no PTP samples collected"
-
+        result.reason = (
+            "no PTP samples collected - check phc_ctl in PATH, PHC device access, "
+            "and phc_ctl cmp output format"
+        )
         return result
 
     result.max_time_error_ns = max(samples)
