@@ -9,9 +9,6 @@
 set -e
 set -o pipefail
 
-git config --global --add safe.directory /usr/vse/vse-sync-test
-git config --global --add safe.directory /usr/vse/vse-sync-collection-tools
-
 
 TESTROOT=$(pwd)
 COLLECTORPATH=$TESTROOT/vse-sync-collection-tools
@@ -333,13 +330,13 @@ EOF
     # Add G.8272 tests if mode is "gm"
     if [ "$TEST_MODE" = "gm" ]; then
         cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
-["sync/G.8272/time-error-in-locked-mode/PHC-to-SYS/RAN/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8272/time-error-in-locked-mode/PHC-to-SYS/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8272/time-error-in-locked-mode/PHC-to-SYS/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8272/wander-TDEV-in-locked-mode/PHC-to-SYS/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8272/wander-TDEV-in-locked-mode/PHC-to-SYS/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8272/wander-MTIE-in-locked-mode/PHC-to-SYS/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE"]
-["sync/G.8272/wander-MTIE-in-locked-mode/PHC-to-SYS/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/time-error-in-locked-mode/system-test-PHC-to-SYS/RAN/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/time-error-in-locked-mode/system-test-PHC-to-SYS/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/time-error-in-locked-mode/system-test-PHC-to-SYS/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/wander-TDEV-in-locked-mode/system-test-PHC-to-SYS/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/wander-TDEV-in-locked-mode/system-test-PHC-to-SYS/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/wander-MTIE-in-locked-mode/system-test-PHC-to-SYS/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE"]
+["sync/G.8272/wander-MTIE-in-locked-mode/system-test-PHC-to-SYS/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-A/testimpl.py", "$GNSS_DEMUXED_PATH"]
 ["sync/G.8272/time-error-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-B/testimpl.py", "$GNSS_DEMUXED_PATH"]
 ["sync/G.8272/wander-TDEV-in-locked-mode/Constellation-to-GNSS-receiver/PRTC-A/testimpl.py", "$GNSS_DEMUXED_PATH"]
@@ -384,6 +381,9 @@ EOF
             add_sma1_tests $row
         fi
     done
+
+    # Ensure test scripts are executable (fixes Permission denied when running in containers)
+    find "$ANALYSERPATH/tests" \( -name "testimpl.py" -o -name "plot.py" \) -exec chmod +x {} + 2>/dev/null || true
 
     env PYTHONPATH=$TDPATH:$PPPATH python3 -m testdrive.run --basedir="$ANALYSERPATH/tests" --imagedir="$PLOTDIR" "$BASEURL_TEST_IDS" $ARTEFACTDIR/testdrive_config.json
 
