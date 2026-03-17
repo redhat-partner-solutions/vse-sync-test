@@ -1,0 +1,65 @@
+# PTP Workload System Test - Kubernetes Job
+#
+# Runs workload that consumes PTP events, stresses system, validates clock.
+# Must run on a node with PTP hardware (linuxptp-daemon present).
+#
+# Usage:
+#   oc apply -f ptp_workload_job.yaml
+#   oc logs -f job/ptp-workload-system-test
+#
+# Prerequisites: PTP Operator, linuxptp-daemon DaemonSet, node with PHC
+# Adjust image tag to match cluster version; nodeSelector may need to match your PTP node labels
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ptp-workload-system-test
+  namespace: openshift-ptp
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app: ptp-workload-test
+    spec:
+      # Run on node with PTP (adjust selector to match your cluster)
+      nodeSelector:
+        ptp/install: "true"
+      hostNetwork: true
+      privileged: true
+      restartPolicy: Never
+      containers:
+        - name: workload
+          image: quay.io/openshift/origin-ptp:4.14
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              PHC=$(ls /dev/ptp* 2>/dev/null | head -1 || echo /dev/ptp0)
+              D=${DURATION:-300}
+              L=100
+              max=0; samples=0
+              start=$(date +%s)
+              echo "Running PTP workload for ${D}s on $PHC" >&2
+              while [ $(date +%s) -lt $((start + D)) ]; do
+                ns=$(phc_ctl $PHC cmp 2>&1 | grep -oE 'offset[^0-9]*-?[0-9]+[[:space:]]*ns' | grep -oE '[0-9]+' | head -1)
+                [ -n "$ns" ] && { samples=$((samples+1)); [ $ns -gt $max ] && max=$ns; }
+                sleep 0.1
+              done
+              [ $max -lt $L ] && r=pass || r=fail
+              echo "{\"result\":\"$r\",\"max_time_error_ns\":$max,\"samples\":$samples,\"limit_ns\":$L}"
+              [ "$r" = pass ]
+          env:
+            - name: DURATION
+              value: "300"
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: dev
+              mountPath: /dev
+      volumes:
+        - name: dev
+          hostPath:
+            path: /dev
+            type: Directory

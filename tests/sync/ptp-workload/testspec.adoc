@@ -1,0 +1,32 @@
+ifdef::env-github[]
+:important-caption: :heavy_exclamation_mark:
+endif::[]
+
+= PTP Workload System Test
+
+This is a workload-based system test that consumes PTP events, stresses the system,
+and validates that the clock remains within RAN requirements (< 100 ns time error)
+under load.
+
+== Goal
+
+Verify that the PHC clock remains accurate (time error < 100 ns) while a workload
+continuously consumes PTP timestamps and stresses the system with CPU load.
+
+== Scope
+
+* Run workload inside linuxptp-daemon pod (or equivalent)
+* Sample PHC vs CLOCK_REALTIME at 10 Hz for configured duration (default 300 s)
+* Optional CPU stress during workload
+* Validate max time error < 100 ns (RAN limit)
+
+== Out of scope
+
+* Path validation (see system-test-PHC-to-SYS)
+* Long-duration TDEV/MTIE under workload
+
+== Acceptance criteria
+
+1. Max time error during workload < 100 ns
+2. Workload completes for configured duration
+3. At least one valid sample collected per second

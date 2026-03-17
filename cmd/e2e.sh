@@ -250,6 +250,22 @@ collect_data(){
     popd >/dev/null 2>&1
 }
 
+PTP_WORKLOAD_RESULT="$ARTEFACTDIR/ptp_workload_result.json"
+
+run_ptp_workload() {
+    chmod +x "$ANALYSERPATH/ptp_workload_system_test/run_workload_test.sh" \
+             "$ANALYSERPATH/ptp_workload_system_test/ptp_workload.sh" \
+             "$ANALYSERPATH/ptp_workload_system_test/ptp_workload.py" 2>/dev/null || true
+    chmod +x "$ANALYSERPATH/tests/sync/ptp-workload/testimpl.py" 2>/dev/null || true
+    echo "Running PTP workload system test (consume PTP, stress system, validate clock)..."
+    "$ANALYSERPATH/ptp_workload_system_test/run_workload_test.sh" "$LOCAL_KUBECONFIG" 300 \
+        2>/dev/null > "$PTP_WORKLOAD_RESULT" || true
+    if [ -s "$PTP_WORKLOAD_RESULT" ]; then
+        echo "PTP workload completed. Result: $(jq -r '.result // "unknown"' "$PTP_WORKLOAD_RESULT" 2>/dev/null || echo "unknown")"
+    else
+        echo "PTP workload did not produce output (pod not found or exec failed)"
+    fi
+}
 
 add_phc_tests() {
     master_ptp_clock_dev=$(echo $1 |  jq -r .ptp_dev)
@@ -350,6 +366,7 @@ EOF
 ["sync/G.8272/wander-MTIE-in-locked-mode/1PPS-to-DPLL/PRTC-A/testimpl.py", "$DPLL_DEMUXED_PATH"]
 ["sync/G.8272/wander-MTIE-in-locked-mode/1PPS-to-DPLL/PRTC-B/testimpl.py", "$DPLL_DEMUXED_PATH"]
 ["sync/G.8272/phc/state-transitions/testimpl.py", "$PHC_DEMUXED_PATH"]
+["sync/ptp-workload/testimpl.py", "$PTP_WORKLOAD_RESULT"]
 EOF
     fi
 
@@ -372,6 +389,7 @@ EOF
 ["sync/G.8273.2/MTIE-for-LPF-filtered-series/SMA1-to-DPLL/Class-C/testimpl.py", "$DPLL_DEMUXED_PATH"]
 ["sync/G.8273.2/MTIE-for-LPF-filtered-series/PTP4L-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE"]
 ["sync/G.8273.2/phc/state-transitions/testimpl.py", "$PHC_DEMUXED_PATH"]
+["sync/ptp-workload/testimpl.py", "$PTP_WORKLOAD_RESULT"]
 EOF
     fi
 
@@ -462,6 +480,7 @@ if [ ! -z "$LOCAL_KUBECONFIG" ]; then
     echo "Running Collection"
     verify_env
     collect_data
+    run_ptp_workload
 else
     echo "Skipping data collection"
 fi

@@ -4,9 +4,13 @@ This document describes the system-level synchronization tests in this repositor
 
 == Overview
 
-System-level tests validate the *complete end-to-end* synchronization path from the PTP Hardware Clock (PHC) to the System Clock (SYS). They verify that the aggregate time accuracy at the system output meets the full requirements specified in ITU-T G.8272 (for T-GM) and G.8273.2 (for T-BC/T-TSC).
+There are two categories of "system-level" tests in this repository:
 
-Unlike functional tests that validate individual segments of the sync chain with partial budgets, system-level tests apply the *full 100%* requirement at the final observation point.
+* *Path validation tests* (`system-test-PHC-to-SYS`): Validate the complete end-to-end synchronization path from PHC to System Clock (SYS). They apply the full 100% requirement at the final observation point but do *not* run a workload.
+
+* *Workload-based system tests* (`ptp_workload_system_test`): A workload that *consumes PTP events*, *stresses the system*, and *validates clock accuracy* under load. These simulate RAN-style consumers that continuously read PTP timestamps while the system is under stress, ensuring the clock meets requirements (e.g. < 100 ns for RAN) during real-world conditions.
+
+The path validation tests verify the sync chain in isolation. The workload-based tests verify that the clock remains accurate when the system is actively consuming PTP and under load.
 
 == Test Duration
 
@@ -72,17 +76,32 @@ All system-level tests use `phc2sys` log data from the PTP daemon. The log captu
 
 == Functional vs System-Level Tests
 
-| Aspect | Functional Tests | System-Level Tests |
-|--------|------------------|-------------------|
-| **Observation point** | Single segment (e.g., DPLL-to-PHC) | Full PHC-to-SYS path |
-| **Budget** | Partial (e.g., 10%) | Full 100% |
-| **Purpose** | Isolate failures to specific segments | Validate end-to-end compliance |
-| **Data source** | Varies by segment (ts2phc, GNSS, dpll, etc.) | phc2sys logs only |
-| **Test prefix** | Segment name (e.g., DPLL-to-PHC) | system-test-PHC-to-SYS |
+| Aspect | Functional Tests | Path Validation (PHC-to-SYS) | Workload-Based System Tests |
+|--------|------------------|------------------------------|-----------------------------|
+| **Observation point** | Single segment (e.g., DPLL-to-PHC) | Full PHC-to-SYS path | PHC under workload |
+| **Budget** | Partial (e.g., 10%) | Full 100% | RAN limit (100 ns) |
+| **Purpose** | Isolate failures to specific segments | Validate end-to-end path | Validate clock under load |
+| **Workload** | None | None | Consumes PTP, stresses system |
+| **Data source** | Varies by segment | phc2sys logs | phc_ctl cmp during workload |
+| **Location** | Segment name (e.g., DPLL-to-PHC) | system-test-PHC-to-SYS | ptp_workload_system_test/ |
+
+== Workload-Based System Tests (ptp_workload_system_test)
+
+The workload-based system tests run a workload that:
+
+1. *Consumes PTP events* — Continuously reads PHC timestamps (`phc_ctl cmp`)
+2. *Stresses the system* — Optional CPU load to simulate RAN workload
+3. *Validates clock* — Ensures time error stays < 100 ns (RAN limit) during the workload
+
+See `ptp_workload_system_test/README.md` for usage. Run via:
+
+* *E2E pipeline* — Automatically runs when executing `./cmd/e2e.sh` with kubeconfig (e.g. `podman run ... ./vse-sync-test/cmd/e2e.sh /usr/vse/kubeconfig`). Results appear in the PDF report.
+* `./run_workload_test.sh` — Standalone: executes inside linuxptp-daemon pod
+* `oc apply -f ptp_workload_job.yaml` — Kubernetes Job (in-cluster)
 
 == Running System-Level Tests
 
-System-level tests are included automatically when running the E2E pipeline:
+Path validation tests are included automatically when running the E2E pipeline:
 
 * *T-GM mode:* `./e2e.sh -m gm ~/kubeconfig`
 * *T-BC mode:* `./e2e.sh -m bc ~/kubeconfig`
@@ -93,13 +112,18 @@ To extend the collection duration for more robust TDEV/MTIE results:
 ./e2e.sh -d 3600s -m gm ~/kubeconfig
 ```
 
-== Acceptance Criteria (Common)
+== Acceptance Criteria
 
-All system-level tests share these acceptance criteria:
+*Path validation tests (PHC-to-SYS):*
 
 1. All samples in the test window meet the full (100%) requirement for the metric.
 2. The time output remains locked for the entire test window.
 3. The test window is at least 1000 seconds long (after transient).
+
+*Workload-based system tests:*
+
+1. Max time error during workload < 100 ns (RAN limit).
+2. Workload runs for configured duration (default 300 s) consuming PTP and stressing system.
 
 == References
 
