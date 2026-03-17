@@ -258,10 +258,14 @@ run_ptp_workload() {
              "$ANALYSERPATH/ptp_workload_system_test/ptp_workload.py" 2>/dev/null || true
     chmod +x "$ANALYSERPATH/tests/sync/ptp-workload/testimpl.py" 2>/dev/null || true
     echo "Running PTP workload system test (consume PTP, stress system, validate clock)..."
-    "$ANALYSERPATH/ptp_workload_system_test/run_workload_test.sh" "$LOCAL_KUBECONFIG" 300 \
+    PTP_WORKLOAD_DIAG="$ARTEFACTDIR/ptp_workload_phc_ctl_sample.txt"
+    "$ANALYSERPATH/ptp_workload_system_test/run_workload_test.sh" "$LOCAL_KUBECONFIG" 300 "$PTP_WORKLOAD_DIAG" \
         2>/dev/null > "$PTP_WORKLOAD_RESULT" || true
     if [ -s "$PTP_WORKLOAD_RESULT" ]; then
         echo "PTP workload completed. Result: $(jq -r '.result // "unknown"' "$PTP_WORKLOAD_RESULT" 2>/dev/null || echo "unknown")"
+        if [ "$(jq -r '.samples // 0' "$PTP_WORKLOAD_RESULT" 2>/dev/null)" = "0" ] && [ -s "$PTP_WORKLOAD_DIAG" ]; then
+            echo "  Diagnostic: phc_ctl sample saved to $PTP_WORKLOAD_DIAG"
+        fi
     else
         echo "PTP workload did not produce output (pod not found or exec failed)"
     fi

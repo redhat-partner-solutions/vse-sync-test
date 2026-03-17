@@ -14,6 +14,7 @@
 
 KUBECONFIG="${1:-${KUBECONFIG}}"
 DURATION="${2:-300}"
+DIAG_OUTPUT="${3:-}"  # Optional: save phc_ctl sample for debugging 0 samples
 NAMESPACE="${PTP_NAMESPACE:-openshift-ptp}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -26,6 +27,17 @@ POD=$(oc --kubeconfig="$KUBECONFIG" get pods -n "$NAMESPACE" -l app=linuxptp-dae
 # Get first PHC device (container may be linuxptp-daemon or ptp)
 CONTAINER=$(oc --kubeconfig="$KUBECONFIG" get pod -n "$NAMESPACE" "$POD" -o jsonpath='{.spec.containers[0].name}' 2>/dev/null || echo "linuxptp-daemon")
 PHC_DEV=$(oc --kubeconfig="$KUBECONFIG" exec -n "$NAMESPACE" "$POD" -c "$CONTAINER" -- ls /dev/ptp* 2>/dev/null | head -1 || echo "/dev/ptp0")
+
+# Pre-flight: capture phc_ctl output for debugging (when DIAG_OUTPUT is set)
+if [[ -n "$DIAG_OUTPUT" ]]; then
+    echo "Capturing phc_ctl sample to $DIAG_OUTPUT" >&2
+    {
+        echo "=== phc_ctl cmp sample ($(date -Iseconds 2>/dev/null || date)) ==="
+        echo "PHC_DEV=$PHC_DEV"
+        echo "--- raw output (stdout+stderr) ---"
+        oc --kubeconfig="$KUBECONFIG" exec -n "$NAMESPACE" "$POD" -c "$CONTAINER" -- sh -c "PHC_CMD=\$(command -v phc_ctl 2>/dev/null || echo /usr/sbin/phc_ctl); echo \"PHC_CMD=\$PHC_CMD\"; \$PHC_CMD $PHC_DEV cmp 2>&1" || echo "(phc_ctl failed or not found)"
+    } > "$DIAG_OUTPUT" 2>&1 || true
+fi
 
 echo "Running PTP workload for ${DURATION}s on $POD (PHC: $PHC_DEV)" >&2
 

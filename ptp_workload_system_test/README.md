@@ -53,6 +53,8 @@ oc logs -f job/ptp-workload-system-test
 
 JSON with `result` (pass/fail), `max_time_error_ns`, `samples`, `limit_ns` (100 ns RAN requirement).
 
+When run from e2e with 0 samples, a diagnostic file is written to `data/artefacts/ptp_workload_phc_ctl_sample.txt` containing the raw `phc_ctl cmp` output for debugging.
+
 ## Requirements
 
 - `phc_ctl` in PATH (from linuxptp)
