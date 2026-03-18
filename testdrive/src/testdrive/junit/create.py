@@ -194,6 +194,38 @@ def junit(
     # only use base URLs if both are supplied
     if baseurl_ids and baseurl_specs:
         uri_builder = UriBuilder(baseurl_ids)
+    base_stripped = baseurl_ids.rstrip("/") if baseurl_ids else ""
+
+    # Abbreviation expansions for human-readable test names in PDF
+    _ABBREV = {
+        "1PPS": "1_pulse_per_second",
+        "DPLL": "digital_phase_locked_loop",
+        "PHC": "ptp_hardware_clock",
+        "SYS": "system",
+        "SMA1": "sync_management_agent",
+        "PTP4L": "ptp_for_linux",
+        "GNSS": "global_navigation_satellite_system",
+        "Class-C": "class_C",
+        "RAN": "radio_access_network",
+        "MTIE": "maximum_time_interval_error",
+        "TDEV": "time_deviation",
+        "LPF": "low_pass_filter",
+    }
+
+    def _expand_abbrevs(path):
+        """Expand known abbreviations in path for display."""
+        out = path
+        for abbr, expanded in _ABBREV.items():
+            out = out.replace(abbr, expanded)
+        return out
+
+    def _display_name(case_id):
+        """Use path-only name for PDF (strip GitHub URL, expand abbreviations)."""
+        if base_stripped and case_id.startswith(base_stripped):
+            path = case_id[len(base_stripped) :].lstrip("/").rstrip("/") or case_id
+            return _expand_abbrevs(path)
+        return case_id
+
     summary = summarize(cases)
     tests = summary["total"]
     errors = summary["error"]
@@ -211,7 +243,8 @@ def junit(
         time=time_total,
     )
     for case in cases:
-        e_case = _testcase(suite, case["id"], time=case.get("duration"))
+        display_name = _display_name(case["id"]) if baseurl_ids else case["id"]
+        e_case = _testcase(suite, display_name, time=case.get("duration"))
         if case["result"] is False:
             e_case.append(_failure(case["reason"]))
         elif case["result"] == "error":
