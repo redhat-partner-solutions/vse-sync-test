@@ -1,4 +1,5 @@
 ---
+display_name: "Verify MTIE (Maximum Time Interval Error) on path of SMA1 to DPLL in locked condition Class-C with a 0.1 Hz low-pass filter"
 requirements: G.8273.2/Class-C
 parameters:
   transient-period/s: 300

@@ -1,3 +1,4 @@
 ---
+display_name: "Verify PHC state transitions"
 parameters:
   min-test-duration/s: 1000
