@@ -1,4 +1,5 @@
 ---
+display_name: "Verify TDEV (Time Deviation in locked mode) on path of 1PPS input to 1PPS output of DPLL in locked condition Class-C"
 requirements: G.8273.2/Class-C
 parameters:
   transient-period/s: 300

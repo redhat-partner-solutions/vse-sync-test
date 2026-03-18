@@ -13,7 +13,6 @@ RUN mkdir -p ${VSE_DIR}
 WORKDIR ${VSE_DIR}
 
 RUN git clone -v --depth=1 https://github.com/redhat-partner-solutions/vse-sync-test-report.git
-
 RUN git clone -v --depth=1 https://github.com/redhat-partner-solutions/vse-sync-test.git
 
 RUN git clone -v https://github.com/redhat-partner-solutions/vse-sync-collection-tools.git

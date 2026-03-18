@@ -186,10 +186,11 @@ verify_env(){
 
     echo "Verifying test env. Please wait..."
     dt=$(date --rfc-3339='seconds' -u)
-    local junit_template=$(echo ".[].data + { \"timestamp\": \"$dt\", "duration": 0}")
+    local junit_template
+    junit_template=$(printf '.[].data + {"timestamp": "%s", "duration": 0}' "$dt")
     set +e
     LOCAL_INTERFACE_NAME=$(jq '.[] | select(.primary == true).name' $DEVJSON)
-    go run main.go env verify --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format --clock-type="$TEST_MODE"> $ENVJSONRAW
+    go run main.go env verify --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format --clock-type="$TEST_MODE" > $ENVJSONRAW
 
     if [ $? -gt 0 ]
     then
@@ -226,7 +227,7 @@ collect_data(){
         LOCAL_INTERFACE_NAME=$(echo $row |  jq -r .name)
         if [ $(echo $row |  jq -r .primary) = true ]; then
             echo "Starting main collector for ${LOCAL_INTERFACE_NAME}"
-            go run main.go collect --unmanaged-debug-pod --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="$COLLECTED_DATA_FILE" --use-analyser-format --duration=$DURATION  --clock-type="$TEST_MODE" &
+            go run main.go collect --unmanaged-debug-pod --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="$COLLECTED_DATA_FILE" --use-analyser-format --duration=$DURATION --clock-type="$TEST_MODE" &
             collectorPids+=($!)
         else
             echo "Starting DPLL collector for ${LOCAL_INTERFACE_NAME}"
@@ -410,6 +411,7 @@ create_pdf() {
     esac
 
     local config=$ARTEFACTDIR/reportgen_config.json
+    # Suite keys must match junit testcase classname (see create_junit test_suite_name).
     cat << EOF > $config
 {
     "title": "Synchronization Test Report",
@@ -422,7 +424,11 @@ create_pdf() {
             "repository": "vse-sync-test.git",
             "baseurl": "${BASEURL_ENV_IDS}"
         },
-        "Synchronization Tests": {
+        "T-GM Tests": {
+            "repository": "vse-sync-test.git",
+            "baseurl": "${BASEURL_TEST_IDS}"
+        },
+        "T-BC/T-TSC Tests": {
             "repository": "vse-sync-test.git",
             "baseurl": "${BASEURL_TEST_IDS}"
         }

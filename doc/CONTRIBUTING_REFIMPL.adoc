@@ -40,6 +40,8 @@ An example of a reference implementation with its configuration file:
 * https://github.com/redhat-partner-solutions/vse-sync-test/blob/main/tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py[reference implementation]
 * https://github.com/redhat-partner-solutions/vse-sync-test/blob/main/tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/config.yaml[configuration file]
 
+Each leaf `config.yaml` (e.g. `PRTC-A/config.yaml`) should include a top-level `display_name` string with the full human-readable test title. The `testimpl.py` reads `display_name` from the config at runtime and includes it in the JSON result at key `pdf_display_name`. `testdrive.junit.create` uses `pdf_display_name` from each test result line when building JUnit/PDF names; if absent it falls back to the raw test id.
+
 [[test-output]]
 == Test output
 
@@ -62,6 +64,8 @@ The JSON value must be a JSON object:
 ** `null` (indicating no duration)
 * optionally including a pair at key `"analysis"` with a value of:
 ** an object providing any relevant structured summarization of the result
+* optionally including a pair at key `"pdf_display_name"` with a value of:
+** a string, the same human-readable base title as module-level `PDF_DISPLAY_NAME` in `testimpl.py` (JUnit appends variant and `[card-N]` suffixes from the test id when applicable)
 
 All other key/value pairs are reserved for future use.
 

@@ -4,6 +4,7 @@
 
 from argparse import ArgumentParser
 import json
+from urllib.parse import parse_qs
 
 from xml.etree import ElementTree as ET
 
@@ -177,6 +178,8 @@ def junit(
     Each case may supply values for keys:
         timestamp - ISO 8601 string of UTC time when the test was started
         duration - test duration in seconds
+        pdf_display_name - human-readable test title produced by the test run;
+            when present it is used as the display name in JUnit/PDF output
 
     If `timestamp` is supplied then `duration` must also be supplied.
 
@@ -194,6 +197,35 @@ def junit(
     # only use base URLs if both are supplied
     if baseurl_ids and baseurl_specs:
         uri_builder = UriBuilder(baseurl_ids)
+    base_stripped = baseurl_ids.rstrip("/") if baseurl_ids else ""
+
+    # Build interface name -> card-N mapping (ens3f0->card-1, ens3f1->card-2, etc.)
+    _unique_names = set()
+    for case in cases:
+        cid = case.get("id", "")
+        if "?" in cid:
+            _, query_part = cid.split("?", 1)
+            params = parse_qs(query_part)
+            if "name" in params:
+                _unique_names.update(params["name"])
+    _name_to_card = {n: f"card-{i + 1}" for i, n in enumerate(sorted(_unique_names))}
+
+    def _display_name(case):
+        """Human-readable PDF name from the test result JSON with [card-N] appended."""
+        case_id = case.get("id", "")
+        desc = case.get("pdf_display_name")
+        if desc:
+            if base_stripped and case_id.startswith(base_stripped):
+                _, _, query_part = case_id[len(base_stripped):].lstrip("/").partition("?")
+                if query_part:
+                    params = parse_qs(query_part)
+                    if "name" in params and params["name"]:
+                        iface = params["name"][0]
+                        card = _name_to_card.get(iface, iface)
+                        desc = f"{desc} [{card}]"
+            return desc
+        return case_id
+
     summary = summarize(cases)
     tests = summary["total"]
     errors = summary["error"]
@@ -211,7 +243,8 @@ def junit(
         time=time_total,
     )
     for case in cases:
-        e_case = _testcase(suite, case["id"], time=case.get("duration"))
+        display_name = _display_name(case) if baseurl_ids else case["id"]
+        e_case = _testcase(suite, display_name, time=case.get("duration"))
         if case["result"] is False:
             e_case.append(_failure(case["reason"]))
         elif case["result"] == "error":
@@ -219,10 +252,13 @@ def junit(
         elif case["result"] is not True:
             raise ValueError(f"""bad result "{case['result']}" for case {case['id']}""")
         e_case.append(_system_out(case, exclude=exclude))
-        properties = [("test_id", case["id"])]
+        properties = [("test_id", display_name)]
         if uri_builder:
             testspec_url = uri_builder.rebase(case["id"], baseurl_specs)
             properties.append(("test_specification", testspec_url))
+        # GitHub tree URL for the test case directory (PDF: clickable test identifier)
+        if baseurl_ids and case.get("id"):
+            properties.append(("test_directory_url", case["id"].split("?", 1)[0]))
         e_case.append(_properties(*properties))
         e_suite.append(e_case)
     e_root.append(e_suite)
