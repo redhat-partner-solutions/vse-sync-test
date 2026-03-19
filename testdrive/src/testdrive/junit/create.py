@@ -227,9 +227,10 @@ def junit(
         return path
 
     def _display_name(case_id):
-        """Use path-only name for PDF (strip GitHub URL, sync/standard, expand abbreviations)."""
+        """Use path-only name for PDF (strip GitHub URL, query params, sync/standard, expand abbreviations)."""
         if base_stripped and case_id.startswith(base_stripped):
             path = case_id[len(base_stripped) :].lstrip("/").rstrip("/") or case_id
+            path = path.split("?")[0].rstrip("/")  # remove ?name=...&ptp_dev=... etc
             path = _strip_path_prefix(path)
             return _expand_abbrevs(path)
         return case_id
@@ -260,7 +261,7 @@ def junit(
         elif case["result"] is not True:
             raise ValueError(f"""bad result "{case['result']}" for case {case['id']}""")
         e_case.append(_system_out(case, exclude=exclude))
-        properties = [("test_id", case["id"])]
+        properties = [("test_id", display_name)]
         if uri_builder:
             testspec_url = uri_builder.rebase(case["id"], baseurl_specs)
             properties.append(("test_specification", testspec_url))
