@@ -219,10 +219,18 @@ def junit(
             out = out.replace(abbr, expanded)
         return out
 
+    def _strip_path_prefix(path):
+        """Remove sync/G.8272/ and sync/G.8273.2/ from path for shorter display."""
+        for prefix in ("sync/G.8272/", "sync/G.8273.2/"):
+            if path.startswith(prefix):
+                return path[len(prefix) :]
+        return path
+
     def _display_name(case_id):
-        """Use path-only name for PDF (strip GitHub URL, expand abbreviations)."""
+        """Use path-only name for PDF (strip GitHub URL, sync/standard, expand abbreviations)."""
         if base_stripped and case_id.startswith(base_stripped):
             path = case_id[len(base_stripped) :].lstrip("/").rstrip("/") or case_id
+            path = _strip_path_prefix(path)
             return _expand_abbrevs(path)
         return case_id
 
