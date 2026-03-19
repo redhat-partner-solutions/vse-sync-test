@@ -4,6 +4,7 @@
 
 from argparse import ArgumentParser
 import json
+from urllib.parse import parse_qs
 
 from xml.etree import ElementTree as ET
 
@@ -227,12 +228,19 @@ def junit(
         return path
 
     def _display_name(case_id):
-        """Use path-only name for PDF (strip GitHub URL, query params, sync/standard, expand abbreviations)."""
+        """Use path-only name for PDF (strip GitHub URL, sync/standard, expand abbreviations).
+        Include interface name from query params when present to avoid duplicate test case keys."""
         if base_stripped and case_id.startswith(base_stripped):
-            path = case_id[len(base_stripped) :].lstrip("/").rstrip("/") or case_id
-            path = path.split("?")[0].rstrip("/")  # remove ?name=...&ptp_dev=... etc
+            path_part, _, query_part = case_id[len(base_stripped) :].lstrip("/").partition("?")
+            path = path_part.rstrip("/")
             path = _strip_path_prefix(path)
-            return _expand_abbrevs(path)
+            path = _expand_abbrevs(path)
+            # Append interface name from query to keep multi-interface tests unique
+            if query_part:
+                params = parse_qs(query_part)
+                if "name" in params and params["name"]:
+                    path = f"{path} [{params['name'][0]}]"
+            return path
         return case_id
 
     summary = summarize(cases)
