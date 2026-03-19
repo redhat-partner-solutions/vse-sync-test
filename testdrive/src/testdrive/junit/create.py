@@ -227,19 +227,31 @@ def junit(
                 return path[len(prefix) :]
         return path
 
+    # Build interface name -> card-N mapping (ens3f0->card-1, ens3f1->card-2, etc.)
+    _unique_names = set()
+    for case in cases:
+        cid = case.get("id", "")
+        if "?" in cid:
+            _, query_part = cid.split("?", 1)
+            params = parse_qs(query_part)
+            if "name" in params:
+                _unique_names.update(params["name"])
+    _name_to_card = {n: f"card-{i + 1}" for i, n in enumerate(sorted(_unique_names))}
+
     def _display_name(case_id):
         """Use path-only name for PDF (strip GitHub URL, sync/standard, expand abbreviations).
-        Include interface name from query params when present to avoid duplicate test case keys."""
+        Include card-N from interface name to keep multi-interface tests unique."""
         if base_stripped and case_id.startswith(base_stripped):
             path_part, _, query_part = case_id[len(base_stripped) :].lstrip("/").partition("?")
             path = path_part.rstrip("/")
             path = _strip_path_prefix(path)
             path = _expand_abbrevs(path)
-            # Append interface name from query to keep multi-interface tests unique
             if query_part:
                 params = parse_qs(query_part)
                 if "name" in params and params["name"]:
-                    path = f"{path} [{params['name'][0]}]"
+                    iface = params["name"][0]
+                    card = _name_to_card.get(iface, iface)
+                    path = f"{path} [{card}]"
             return path
         return case_id
 
