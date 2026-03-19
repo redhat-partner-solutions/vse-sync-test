@@ -203,7 +203,6 @@ def junit(
         "DPLL": "digital_phase_locked_loop",
         "PHC": "ptp_hardware_clock",
         "SYS": "system",
-        "SMA1": "sync_management_agent",
         "PTP4L": "ptp_for_linux",
         "GNSS": "global_navigation_satellite_system",
         "Class-C": "class_C",
