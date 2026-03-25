@@ -15,11 +15,33 @@ class TimeErrorParser(Parser):
     - Old ts2phc format: ts2phc[681011.839]: [ts2phc.0.config] ens3f0 master offset 0 s2
     - New dpll format (PTP operator 4.16+ with e810 plugin):
       dpll[1769630949]:[ts2phc.0.config] ens3f0 frequency_status 3 offset 0 phase_status 3 pps_status 1 s2
+
+    The interface parameter can be a single string, or an iterable of strings
+    to match any of several identifiers (e.g. both a PTP clock path like
+    /dev/ptp4 and a network interface name like ens3f0).
     """
     id_ = 'ts2phc/time-error'
     elems = ('timestamp', 'interface', 'terror', 'state')
     y_name = 'terror'
     parsed = namedtuple('Parsed', elems)
+
+    @staticmethod
+    def _interface_pattern(interface):
+        """Return a regex fragment matching one or more interface identifiers.
+
+        Accepts None (match any non-whitespace token), a single string,
+        or an iterable of strings (match any of them).
+        """
+        if interface is None:
+            return r'\s(\S+)'
+        if isinstance(interface, str):
+            return fr'\s({interface})'
+        identifiers = [i for i in interface if i]
+        if not identifiers:
+            return r'\s(\S+)'
+        if len(identifiers) == 1:
+            return fr'\s({identifiers[0]})'
+        return fr'\s({"|".join(identifiers)})'
 
     @staticmethod
     def build_regexp_ts2phc(interface=None):
@@ -28,7 +50,7 @@ class TimeErrorParser(Parser):
             r'^ts2phc'
             + r'\[([1-9][0-9]*\.?[0-9]*)\]:', # timestamp (with or without decimal)
             r'(?:\s\[ts2phc\.\d\..*\])?',  # configuration file name
-            fr'\s({interface})' if interface else r'\s(\S+)', # interface
+            TimeErrorParser._interface_pattern(interface),
             r'(?:\smaster)?\s+offset\s*',
             r'\s(-?[0-9]+)', # time error
             r'\s(\S+)', # state
@@ -42,7 +64,7 @@ class TimeErrorParser(Parser):
             r'^dpll'
             + r'\[([1-9][0-9]*)\]:', # timestamp (integer, unix epoch)
             r'\[.*\]',  # configuration file name like [ts2phc.0.config]
-            fr'\s({interface})' if interface else r'\s(\S+)', # interface
+            TimeErrorParser._interface_pattern(interface),
             r'\s+frequency_status\s+\d+',  # frequency_status field
             r'\s+offset\s+(-?[0-9]+)',  # time error (offset value)
             r'\s+phase_status\s+\d+',  # phase_status field

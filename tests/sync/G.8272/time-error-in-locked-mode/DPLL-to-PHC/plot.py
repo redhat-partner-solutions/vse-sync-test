@@ -31,7 +31,7 @@ def main():
     aparser = ArgumentParser(description=main.__doc__)
     aparser.add_argument('prefix', help="output image prefix")
     aparser.add_argument('input')
-    aparser.add_argument('interface', help="interface to capture", default=None)
+    aparser.add_argument('interface', nargs='+', help="interface identifier(s) to capture")
     args = aparser.parse_args()
     parser = TimeErrorParser(args.interface)
     plotter = Plotter(TIMESERIES, Axis("Unfiltered Time Error (ns)", parser.y_name))
