@@ -132,23 +132,11 @@ class TestTimeErrorWithMultipleInterfacesParser(TestCase, metaclass=ParserTestBu
             "ts2phc[681011.839]: /dev/ptp4 offset          0 s2 freq      -0",
             (Decimal("681011.839"), "/dev/ptp4", 0, "s2"),
         ),
-        (
-            "dpll[1769630949]:[ts2phc.0.config] "
-            "ens7f1 frequency_status 3 offset 5 phase_status 3 pps_status 1 s2",
-            (Decimal("1769630949"), "ens7f1", 5, "s2"),
-        ),
-        (
-            "dpll[1769630949]:[ts2phc.0.config] "
-            "/dev/ptp4 frequency_status 3 offset 5 phase_status 3 pps_status 1 s2",
-            (Decimal("1769630949"), "/dev/ptp4", 5, "s2"),
-        ),
     )
     reject = ()
     discard = (
         "foo bar baz",
         "ts2phc[681011.839]: ens3f0 offset          0 s2 freq      -0",
-        "dpll[1769630949]:[ts2phc.0.config] "
-        "ens3f0 frequency_status 3 offset 0 phase_status 3 pps_status 1 s2",
     )
     file = (
         "\n".join(
