@@ -11,8 +11,10 @@ from uuid import uuid4
 from decimal import Decimal
 from xml.etree import ElementTree as ET
 
+
 class Config(dict):
     """Configuration of asciidoc generation."""
+
     def case_path(self, case):
         """Return a path in the local filesystem to the files for `case`.
 
@@ -33,6 +35,7 @@ class Config(dict):
         except KeyError:
             pass
         return None
+
     def case_path_testspec(self, case):
         """Return a path in the local filesystem to the test spec for `case`.
 
@@ -46,6 +49,7 @@ class Config(dict):
         except TypeError:
             pass
         return None
+
     def case_title(self, case):
         """Return test case title for `case`.
 
@@ -59,14 +63,17 @@ class Config(dict):
                     if line.startswith('='):
                         return line.lstrip('= ').rstrip()
         return case.name
+
     @classmethod
     def json(cls, filename, encoding='utf-8'):
         """Return a new instance from JSON-encoded config in `filename`."""
         with open(filename, encoding=encoding) as fid:
             return cls(json.load(fid))
 
+
 NOT_RECORDED = '[.deemphasize]_not recorded_'
 EMPTY = '[.deemphasize]#-#'
+
 
 def pdf_test_identifier_cell(case):
     """AsciiDoc for *test identifier* table cell: same visible name, clickable GitHub link."""
@@ -77,25 +84,31 @@ def pdf_test_identifier_cell(case):
         return f'link:{url}[{safe}]'
     return display or NOT_RECORDED
 
+
 def a_test_success(val):
     """Return asciidoc marking `val` as test success."""
     return f'[.test-success]#{val}#'
+
 
 def a_test_failure(val):
     """Return asciidoc marking `val` as test failure."""
     return f'[.test-failure]#{val}#'
 
+
 def a_test_error(val):
     """Return asciidoc marking `val` as test error."""
     return f'[.test-error]#{val}#'
+
 
 def literal_block(val):
     """Return asciidoc marking `val` as a literal block."""
     return '\n'.join(('', '....', val, '....'))
 
+
 def row(*cells):
     """Return a string for an asciidoc table row with `cells`."""
     return '\n|\n' + '\n|\n'.join((str(c) for c in cells))
+
 
 def indent_titles(filename, level):
     """Indent titles in `filename` such that the first title is at `level`.
@@ -123,8 +136,10 @@ def indent_titles(filename, level):
                 line = prefix + line
             print(line, file=fod, end='')
 
+
 class TestCase(dict):
     """A test case."""
+
     def __init__(self, elem):
         super().__init__()
         self._uuid = uuid4()
@@ -142,6 +157,7 @@ class TestCase(dict):
                 self[child.get('name')] = child.get('value')
         if not self._timestamp or self._duration is None:
             self._use_timing_from_stdout()
+
     @staticmethod
     def _result_reason_from_elem(elem):
         """Return test case (result, reason) from `elem`."""
@@ -152,11 +168,13 @@ class TestCase(dict):
         if child is not None:
             return ('error', child.get('message'))
         return (True, None)
+
     @staticmethod
     def _stdout_from_elem(elem):
         """Return test case output from `elem`."""
         child = elem.find('system-out')
         return child.text if child is not None else None
+
     def _use_timing_from_stdout(self):
         """Set timestamp and duration from JSON object in stdout."""
         try:
@@ -167,30 +185,37 @@ class TestCase(dict):
         if timestamp:
             self._timestamp = timestamp
             self._duration = dct['duration']
+
     @property
     def uuid(self):
         """A uuid for this test case."""
         return self._uuid
+
     @property
     def name(self):
         """The name of this test case."""
         return self._name
+
     @property
     def suite(self):
         """The test suite name of this test case."""
         return self._suite
+
     @property
     def timestamp(self):
         """The timestamp of this test case."""
         return self._timestamp
+
     @property
     def duration(self):
         """The duration of this test case."""
         return self._duration
+
     @property
     def result(self):
         """The result of this test case."""
         return self._result
+
     @property
     def a_result(self):
         """The result of this test case as asciidoc."""
@@ -199,36 +224,45 @@ class TestCase(dict):
         if self.result is False:
             return a_test_failure('failure')
         return a_test_error(self.result)
+
     @property
     def reason(self):
         """The reason of this test case."""
         return self._reason
+
     @property
     def stdout(self):
         """The output of this test case."""
         return self._stdout
+
     @property
     def anchor_result(self):
         """Return an anchor for this test case result."""
         return f'[#{self.uuid}_result]'
+
     @property
     def xref_result(self):
         """Return a cross-reference to this test case result."""
         return f'<<{self.uuid}_result>>'
+
     @property
     def anchor_spec(self):
         """Return an anchor for this test case specification."""
         return f'[#{self.uuid}_spec]'
+
     @property
     def xref_spec(self):
         """Return a cross-reference to this test case specification."""
         return f'<<{self.uuid}_spec>>'
 
+
 class TestDetail:
     """Test detail for a test case."""
+
     def __init__(self, images=(), tables=()):
         self._images = images
         self._tables = tables
+
     def to_asciidoc(self, objdir):
         """Generate asciidoc for this test detail.
 
@@ -249,6 +283,7 @@ class TestDetail:
             yield from (row(f'*{k}*', dct[k]) for k in sorted(dct))
             yield ''
             yield '|==='
+
     @staticmethod
     def _image_item(item):
         """Return (title, path) for the image specified by `item`.
@@ -262,6 +297,7 @@ class TestDetail:
             if not isinstance(item, str):
                 return None
             return (None, item)
+
     @classmethod
     def from_output(cls, output):
         """Return an instance of `cls` if `output` is JSON-encoded test detail.
@@ -303,8 +339,10 @@ class TestDetail:
                 tables.insert(0, ('analysis', analysis))
         return cls(images, tables)
 
+
 class TestSuite(OrderedDict):
     """A test suite with sequence order of test cases preserved."""
+
     def __init__(self, elem):
         super().__init__()
         self._name = elem.get('name')
@@ -314,6 +352,7 @@ class TestSuite(OrderedDict):
             if case.name in self:
                 raise KeyError(f'duplicate test case "{case.name}"')
             self[case.name] = case
+
     @staticmethod
     def _metadata_from_elem(elem):
         """Return a dict of test suite metadata from `elem`."""
@@ -331,10 +370,12 @@ class TestSuite(OrderedDict):
             'timestamp': elem.get('timestamp'),
             'duration': Decimal(time) if time is not None else time,
         }
+
     @property
     def name(self):
         """The name of this test suite."""
         return self._name
+
     def summary(self):
         """Generate asciidoc summary for this test suite."""
         yield ''
@@ -356,6 +397,7 @@ class TestSuite(OrderedDict):
         yield '|case|result'
         yield from (row(c.xref_result, c.a_result) for c in self.values())
         yield '|==='
+
     def results(self, objdir, config, level):
         """Generate asciidoc results for this test suite."""
         for case in self.values():
@@ -381,6 +423,7 @@ class TestSuite(OrderedDict):
                 yield literal_block(case.stdout)
             yield ''
             yield '<<<'
+
     def specs(self, objdir, config, level):
         """Generate asciidoc test specs for this test suite."""
         for case in self.values():
@@ -398,8 +441,10 @@ class TestSuite(OrderedDict):
             yield ''
             yield '<<<'
 
+
 class TestSuites(OrderedDict):
     """Test suites with sequence order of inclusion preserved."""
+
     def include(self, filename):
         """Include test suites from JUnit XML in `filename`."""
         root = ET.parse(filename).getroot()
@@ -408,6 +453,7 @@ class TestSuites(OrderedDict):
             if suite.name in self:
                 raise KeyError(f'duplicate test suite "{suite.name}"')
             self[suite.name] = suite
+
     def summary(self, level):
         """Generate asciidoc summary in test suite order."""
         for suite in self.values():
@@ -416,6 +462,7 @@ class TestSuites(OrderedDict):
             yield from suite.summary()
             yield ''
             yield '<<<'
+
     def results(self, objdir, config, level):
         """Generate asciidoc results in test suite order."""
         for suite in self.values():
@@ -424,6 +471,7 @@ class TestSuites(OrderedDict):
             yield from suite.results(objdir, config, level + '=')
             yield ''
             yield '<<<'
+
     def specs(self, objdir, config, level):
         """Generate asciidoc test specifications in test suite order."""
         for suite in self.values():
@@ -432,6 +480,7 @@ class TestSuites(OrderedDict):
             yield from suite.specs(objdir, config, level + '=')
             yield ''
             yield '<<<'
+
 
 def main():
     """Generate asciidoc from JUnit XML files.
@@ -481,6 +530,7 @@ def main():
     print('[appendix]')
     print('== Test Specifications')
     print(*suites.specs(objdir, config, level_suite), sep='\n')
+
 
 if __name__ == '__main__':
     main()

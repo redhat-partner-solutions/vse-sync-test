@@ -201,37 +201,111 @@ def junit(
         """Remove sync/G.8272/ and sync/G.8273.2/ from path for shorter display."""
         for prefix in ("sync/G.8272/", "sync/G.8273.2/"):
             if path.startswith(prefix):
-                return path[len(prefix) :]
+                return path[len(prefix):]
         return path
 
     # Human-readable test descriptions for PDF (test identifier and test case name)
     # Keys are path prefixes (metric/segment); match longest prefix first
     _TEST_DESCRIPTIONS = (
-        ("time-error-in-locked-mode/1PPS-to-DPLL", "Verify time error on path of 1PPS input to 1PPS output of DPLL in locked condition"),
+        (
+            "time-error-in-locked-mode/1PPS-to-DPLL",
+            "Verify time error on path of 1PPS input to 1PPS output of DPLL in locked condition",
+        ),
         ("time-error-in-locked-mode/DPLL-to-PHC", "Verify time error on path of DPLL to PHC in locked condition"),
         ("time-error-in-locked-mode/SMA1-to-DPLL", "Verify time error on path of SMA1 to DPLL in locked condition"),
-        ("time-error-in-locked-mode/Constellation-to-GNSS-receiver", "Verify time error on path of constellation to GNSS receiver in locked condition"),
-        ("time-error-in-locked-mode/PHC-to-SYS", "Verify time error on path of PHC to system clock in locked condition"),
+        (
+            "time-error-in-locked-mode/Constellation-to-GNSS-receiver",
+            "Verify time error on path of constellation to GNSS receiver in locked condition",
+        ),
+        (
+            "time-error-in-locked-mode/PHC-to-SYS",
+            "Verify time error on path of PHC to system clock in locked condition",
+        ),
         ("time-error-in-locked-mode/PTP4L-to-PHC", "Verify time error on path of PTP4L to PHC in locked condition"),
-        ("time-error-in-locked-mode/system-test-PHC-to-SYS", "Verify time error on path of PHC to system clock in locked condition (system test)"),
-        ("wander-TDEV-in-locked-mode/1PPS-to-DPLL", "Verify TDEV (Time Deviation in locked mode) on path of 1PPS input to 1PPS output of DPLL in locked condition"),
-        ("wander-TDEV-in-locked-mode/DPLL-to-PHC", "Verify TDEV (Time Deviation in locked mode) on path of DPLL to PHC in locked condition"),
-        ("wander-TDEV-in-locked-mode/SMA1-to-DPLL", "Verify TDEV (Time Deviation in locked mode) on path of SMA1 to DPLL in locked condition"),
-        ("wander-TDEV-in-locked-mode/Constellation-to-GNSS-receiver", "Verify TDEV (Time Deviation in locked mode) on path of constellation to GNSS receiver in locked condition"),
-        ("wander-TDEV-in-locked-mode/system-test-PHC-to-SYS", "Verify TDEV (Time Deviation in locked mode) on path of PHC to system clock in locked condition (system test)"),
-        ("wander-MTIE-in-locked-mode/1PPS-to-DPLL", "Verify MTIE (Maximum Time Interval Error) on path of 1PPS input to 1PPS output of DPLL in locked condition"),
-        ("wander-MTIE-in-locked-mode/DPLL-to-PHC", "Verify MTIE (Maximum Time Interval Error) on path of DPLL to PHC in locked condition"),
-        ("wander-MTIE-in-locked-mode/SMA1-to-DPLL", "Verify MTIE (Maximum Time Interval Error) on path of SMA1 to DPLL in locked condition"),
-        ("wander-MTIE-in-locked-mode/Constellation-to-GNSS-receiver", "Verify MTIE (Maximum Time Interval Error) on path of constellation to GNSS receiver in locked condition"),
-        ("wander-MTIE-in-locked-mode/system-test-PHC-to-SYS", "Verify MTIE (Maximum Time Interval Error) on path of PHC to system clock in locked condition (system test)"),
-        ("TDEV-in-locked-mode/1PPS-to-DPLL", "Verify TDEV (Time Deviation in locked mode) on path of 1PPS input to 1PPS output of DPLL in locked condition"),
-        ("TDEV-in-locked-mode/DPLL-to-PHC", "Verify TDEV (Time Deviation in locked mode) on path of DPLL to PHC in locked condition"),
-        ("TDEV-in-locked-mode/SMA1-to-DPLL", "Verify TDEV (Time Deviation in locked mode) on path of SMA1 to DPLL in locked condition"),
-        ("TDEV-in-locked-mode/PTP4L-to-PHC", "Verify TDEV (Time Deviation in locked mode) on path of PTP4L to PHC in locked condition"),
-        ("MTIE-for-LPF-filtered-series/1PPS-to-DPLL", "Verify MTIE (Maximum Time Interval Error) on path of 1PPS input to 1PPS output of DPLL in locked condition"),
-        ("MTIE-for-LPF-filtered-series/DPLL-to-PHC", "Verify MTIE (Maximum Time Interval Error) on path of DPLL to PHC in locked condition"),
-        ("MTIE-for-LPF-filtered-series/SMA1-to-DPLL", "Verify MTIE (Maximum Time Interval Error) on path of SMA1 to DPLL in locked condition"),
-        ("MTIE-for-LPF-filtered-series/PTP4L-to-PHC", "Verify MTIE (Maximum Time Interval Error) on path of PTP4L to PHC in locked condition"),
+        (
+            "time-error-in-locked-mode/system-test-PHC-to-SYS",
+            "Verify time error on path of PHC to system clock in locked condition (system test)",
+        ),
+        (
+            "wander-TDEV-in-locked-mode/1PPS-to-DPLL",
+            "Verify TDEV (Time Deviation in locked mode) on path of 1PPS input to "
+            "1PPS output of DPLL in locked condition",
+        ),
+        (
+            "wander-TDEV-in-locked-mode/DPLL-to-PHC",
+            "Verify TDEV (Time Deviation in locked mode) on path of DPLL to PHC in locked condition",
+        ),
+        (
+            "wander-TDEV-in-locked-mode/SMA1-to-DPLL",
+            "Verify TDEV (Time Deviation in locked mode) on path of SMA1 to DPLL in locked condition",
+        ),
+        (
+            "wander-TDEV-in-locked-mode/Constellation-to-GNSS-receiver",
+            "Verify TDEV (Time Deviation in locked mode) on path of constellation to "
+            "GNSS receiver in locked condition",
+        ),
+        (
+            "wander-TDEV-in-locked-mode/system-test-PHC-to-SYS",
+            "Verify TDEV (Time Deviation in locked mode) on path of PHC to system clock "
+            "in locked condition (system test)",
+        ),
+        (
+            "wander-MTIE-in-locked-mode/1PPS-to-DPLL",
+            "Verify MTIE (Maximum Time Interval Error) on path of 1PPS input to 1PPS "
+            "output of DPLL in locked condition",
+        ),
+        (
+            "wander-MTIE-in-locked-mode/DPLL-to-PHC",
+            "Verify MTIE (Maximum Time Interval Error) on path of DPLL to PHC in locked condition",
+        ),
+        (
+            "wander-MTIE-in-locked-mode/SMA1-to-DPLL",
+            "Verify MTIE (Maximum Time Interval Error) on path of SMA1 to DPLL in locked condition",
+        ),
+        (
+            "wander-MTIE-in-locked-mode/Constellation-to-GNSS-receiver",
+            "Verify MTIE (Maximum Time Interval Error) on path of constellation to GNSS "
+            "receiver in locked condition",
+        ),
+        (
+            "wander-MTIE-in-locked-mode/system-test-PHC-to-SYS",
+            "Verify MTIE (Maximum Time Interval Error) on path of PHC to system clock in "
+            "locked condition (system test)",
+        ),
+        (
+            "TDEV-in-locked-mode/1PPS-to-DPLL",
+            "Verify TDEV (Time Deviation in locked mode) on path of 1PPS input to 1PPS "
+            "output of DPLL in locked condition",
+        ),
+        (
+            "TDEV-in-locked-mode/DPLL-to-PHC",
+            "Verify TDEV (Time Deviation in locked mode) on path of DPLL to PHC in locked condition",
+        ),
+        (
+            "TDEV-in-locked-mode/SMA1-to-DPLL",
+            "Verify TDEV (Time Deviation in locked mode) on path of SMA1 to DPLL in locked condition",
+        ),
+        (
+            "TDEV-in-locked-mode/PTP4L-to-PHC",
+            "Verify TDEV (Time Deviation in locked mode) on path of PTP4L to PHC in locked condition",
+        ),
+        (
+            "MTIE-for-LPF-filtered-series/1PPS-to-DPLL",
+            "Verify MTIE (Maximum Time Interval Error) on path of 1PPS input to 1PPS output "
+            "of DPLL in locked condition",
+        ),
+        (
+            "MTIE-for-LPF-filtered-series/DPLL-to-PHC",
+            "Verify MTIE (Maximum Time Interval Error) on path of DPLL to PHC in locked condition",
+        ),
+        (
+            "MTIE-for-LPF-filtered-series/SMA1-to-DPLL",
+            "Verify MTIE (Maximum Time Interval Error) on path of SMA1 to DPLL in locked condition",
+        ),
+        (
+            "MTIE-for-LPF-filtered-series/PTP4L-to-PHC",
+            "Verify MTIE (Maximum Time Interval Error) on path of PTP4L to PHC in locked condition",
+        ),
         ("phc/state-transitions", "Verify PHC state transitions"),
         ("ptp-workload", "Verify clock accuracy under PTP workload"),
     )
@@ -259,7 +333,7 @@ def junit(
         """Use human-readable description for PDF when available, else path-based name.
         Always append variant (PRTC-A, PRTC-B, Class-C, RAN) and card [card-N] when present."""
         if base_stripped and case_id.startswith(base_stripped):
-            path_part, _, query_part = case_id[len(base_stripped) :].lstrip("/").partition("?")
+            path_part, _, query_part = case_id[len(base_stripped):].lstrip("/").partition("?")
             path = path_part.rstrip("/")
             path = _strip_path_prefix(path)
             # Extract variant (PRTC-A, PRTC-B, Class-C, RAN) and card - keep in name
