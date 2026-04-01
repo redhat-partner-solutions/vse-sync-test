@@ -317,6 +317,9 @@ def junit(
         if uri_builder:
             testspec_url = uri_builder.rebase(case["id"], baseurl_specs)
             properties.append(("test_specification", testspec_url))
+        # GitHub tree URL for the test case directory (PDF: clickable test identifier)
+        if baseurl_ids and case.get("id"):
+            properties.append(("test_directory_url", case["id"].split("?", 1)[0]))
         e_case.append(_properties(*properties))
         e_suite.append(e_case)
     e_root.append(e_suite)
