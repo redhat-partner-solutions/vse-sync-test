@@ -381,7 +381,7 @@ EOF
 
 create_junit() {
     cat $ENVJSON | \
-        env PYTHONPATH=$TDPATH python3 -m testdrive.junit.create --hostname="$CLUSTER_UNDER_TEST" --baseurl-ids="$BASEURL_ENV_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "Environment" - \
+        env PYTHONPATH=$TDPATH python3 -m testdrive.junit.create --hostname="$CLUSTER_UNDER_TEST" --baseurl-ids="$BASEURL_ENV_IDS" --baseurl-specs="$BASEURL_SPECS" --tests-root="$ANALYSERPATH/tests" --prettify "Environment" - \
         > $ENVJUNIT
 
     # Set test suite name based on test mode
@@ -392,7 +392,7 @@ create_junit() {
     esac
 
     cat $TESTJSON | \
-        env PYTHONPATH=$TDPATH python3 -m testdrive.junit.create --hostname="$CLUSTER_UNDER_TEST" --baseurl-ids="$BASEURL_TEST_IDS" --baseurl-specs="$BASEURL_SPECS" --prettify "$test_suite_name" - \
+        env PYTHONPATH=$TDPATH python3 -m testdrive.junit.create --hostname="$CLUSTER_UNDER_TEST" --baseurl-ids="$BASEURL_TEST_IDS" --baseurl-specs="$BASEURL_SPECS" --tests-root="$ANALYSERPATH/tests" --prettify "$test_suite_name" - \
         > $TESTJUNIT
 
     env PYTHONPATH=$TDPATH python3 -m testdrive.junit.merge --prettify $ARTEFACTDIR/*.junit > $FULLJUNIT

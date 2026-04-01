@@ -4,6 +4,7 @@
 
 from argparse import ArgumentParser
 import json
+import os
 from urllib.parse import parse_qs
 
 from xml.etree import ElementTree as ET
@@ -11,6 +12,47 @@ from xml.etree import ElementTree as ET
 from ..cases import summarize
 from ..common import open_input
 from ..uri import UriBuilder
+
+
+def _read_display_name_from_config_yaml(path):
+    """Return display_name value from config.yaml if present (single-line key)."""
+    try:
+        with open(path, encoding="utf-8") as fid:
+            for line in fid:
+                stripped = line.strip()
+                if stripped.startswith("display_name:"):
+                    val = stripped[len("display_name:"):].strip()
+                    if len(val) >= 2 and val[0] == val[-1] and val[0] in "\"'":
+                        return val[1:-1]
+                    return val
+    except OSError:
+        pass
+    return None
+
+
+def _read_display_name_txt(path):
+    """Return first non-empty line from display_name.txt."""
+    try:
+        with open(path, encoding="utf-8") as fid:
+            for line in fid:
+                line = line.strip()
+                if line:
+                    return line
+    except OSError:
+        pass
+    return None
+
+
+def _load_display_name_from_tests(tests_root, rel_url_path):
+    """Load human-readable name from tests/.../config.yaml or tests/.../display_name.txt."""
+    if not tests_root or not rel_url_path:
+        return None
+    base = os.path.join(tests_root, rel_url_path.rstrip("/"))
+    cfg = os.path.join(base, "config.yaml")
+    name = _read_display_name_from_config_yaml(cfg)
+    if name:
+        return name
+    return _read_display_name_txt(os.path.join(base, "display_name.txt"))
 
 
 def _buildattrs(**kwargs):
@@ -158,6 +200,7 @@ def junit(
     baseurl_ids=None,
     baseurl_specs=None,
     prettify=False,
+    tests_root=None,
 ):
     """Return JUnit output for test `cases` in `suite`.
 
@@ -168,7 +211,11 @@ def junit(
     `exclude` is a sequence of keys to omit from the JSON object in system-out;
     `baseurl_ids` is the base URL for test ids;
     `baseurl_specs` is the base URL for test specifications;
-    if `prettify` then indent XML output.
+    if `prettify` then indent XML output;
+    `tests_root` is the absolute path to the `tests/` directory (sibling of test
+    implementations); when set, each test may supply a human-readable name via
+    `display_name` in config.yaml or a line in display_name.txt under its case
+    directory (see _load_display_name_from_tests).
 
     Each case must supply values for keys:
         id - the test URI
@@ -331,11 +378,23 @@ def junit(
 
     def _display_name(case_id):
         """Use human-readable description for PDF when available, else path-based name.
-        Always append variant (PRTC-A, PRTC-B, Class-C, RAN) and card [card-N] when present."""
+        Prefer display_name from tests/.../config.yaml or display_name.txt when tests_root
+        is set. Otherwise use legacy path table. Always append variant (PRTC-A, PRTC-B,
+        Class-C, RAN) and card [card-N] when present for legacy names only."""
         if base_stripped and case_id.startswith(base_stripped):
             path_part, _, query_part = case_id[len(base_stripped):].lstrip("/").partition("?")
-            path = path_part.rstrip("/")
-            path = _strip_path_prefix(path)
+            path_full = path_part.rstrip("/")
+            explicit = _load_display_name_from_tests(tests_root, path_full)
+            if explicit is not None:
+                result = explicit
+                if query_part:
+                    params = parse_qs(query_part)
+                    if "name" in params and params["name"]:
+                        iface = params["name"][0]
+                        card = _name_to_card.get(iface, iface)
+                        result = f"{result} [{card}]"
+                return result
+            path = _strip_path_prefix(path_full)
             # Extract variant (PRTC-A, PRTC-B, Class-C, RAN) and card - keep in name
             segments = path.split("/")
             raw_variant = segments[-1] if segments and segments[-1] in ("PRTC-A", "PRTC-B", "Class-C", "RAN") else ""
@@ -439,6 +498,13 @@ def main():
         help="The base URL which test specifications are relative to.",
     )
     aparser.add_argument(
+        "--tests-root",
+        help=(
+            "Absolute path to tests/; loads display_name from each case's "
+            "config.yaml or display_name.txt."
+        ),
+    )
+    aparser.add_argument(
         "suite",
         help="The name of the test suite. (Used in JUnit output.)",
     )
@@ -458,6 +524,7 @@ def main():
             args.baseurl_ids,
             args.baseurl_specs,
             args.prettify,
+            args.tests_root,
         )
     )
 

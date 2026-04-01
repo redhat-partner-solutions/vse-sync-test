@@ -40,6 +40,8 @@ An example of a reference implementation with its configuration file:
 * https://github.com/redhat-partner-solutions/vse-sync-test/blob/main/tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py[reference implementation]
 * https://github.com/redhat-partner-solutions/vse-sync-test/blob/main/tests/sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/config.yaml[configuration file]
 
+Optionally, `config.yaml` may include a top-level `display_name` string: the human-readable title for this test in the PDF/JUnit report. `cmd/e2e.sh` invokes `testdrive.junit.create` with `--tests-root` pointing at this repository’s `tests/` directory so that name is picked up. If `display_name` is omitted, a legacy path-based table in `junit/create.py` may still supply a title for known tests. Alternatively, a one-line file `display_name.txt` in the same directory as `config.yaml` is read if `display_name` is not set in YAML.
+
 [[test-output]]
 == Test output
 

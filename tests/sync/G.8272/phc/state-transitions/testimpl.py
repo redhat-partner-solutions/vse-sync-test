@@ -6,6 +6,8 @@
 
 sync/G.8272/phc/state-transitions
 
+The PDF report title for this test is set in config.yaml as ``display_name``
+(used by testdrive.junit.create when invoked with ``--tests-root``).
 """
 
 from argparse import ArgumentParser
