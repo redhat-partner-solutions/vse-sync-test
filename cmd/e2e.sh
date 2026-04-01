@@ -186,7 +186,8 @@ verify_env(){
 
     echo "Verifying test env. Please wait..."
     dt=$(date --rfc-3339='seconds' -u)
-    local junit_template=$(echo ".[].data + { \"timestamp\": \"$dt\", "duration": 0}")
+    local junit_template
+    junit_template=$(printf '.[].data + {"timestamp": "%s", "duration": 0}' "$dt")
     set +e
     LOCAL_INTERFACE_NAME=$(jq '.[] | select(.primary == true).name' $DEVJSON)
     go run main.go env verify --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format --clock-type="$TEST_MODE" > $ENVJSONRAW
@@ -226,11 +227,11 @@ collect_data(){
         LOCAL_INTERFACE_NAME=$(echo $row |  jq -r .name)
         if [ $(echo $row |  jq -r .primary) = true ]; then
             echo "Starting main collector for ${LOCAL_INTERFACE_NAME}"
-            go run main.go collect --unmanaged-debug-pod --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="$COLLECTED_DATA_FILE" --use-analyser-format --duration=$DURATION &
+            go run main.go collect --unmanaged-debug-pod --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="$COLLECTED_DATA_FILE" --use-analyser-format --duration=$DURATION --clock-type="$TEST_MODE" &
             collectorPids+=($!)
         else
             echo "Starting DPLL collector for ${LOCAL_INTERFACE_NAME}"
-            go run main.go collect --unmanaged-debug-pod --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="${COLLECTED_DATA_FILE}_${LOCAL_INTERFACE_NAME}" --use-analyser-format --duration=$DURATION --collector="DPLL" &
+            go run main.go collect --unmanaged-debug-pod --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --logs-output="$PTP_DAEMON_LOGFILE" --output="${COLLECTED_DATA_FILE}_${LOCAL_INTERFACE_NAME}" --use-analyser-format --duration=$DURATION --clock-type="$TEST_MODE" --collector="DPLL" &
             collectorPids+=($!)
         fi
     done
