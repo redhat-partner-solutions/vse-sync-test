@@ -409,6 +409,7 @@ create_pdf() {
     esac
 
     local config=$ARTEFACTDIR/reportgen_config.json
+    # Suite keys must match junit testcase classname (see create_junit test_suite_name).
     cat << EOF > $config
 {
     "title": "Synchronization Test Report",
@@ -421,7 +422,11 @@ create_pdf() {
             "repository": "vse-sync-test.git",
             "baseurl": "${BASEURL_ENV_IDS}"
         },
-        "Synchronization Tests": {
+        "T-GM Tests": {
+            "repository": "vse-sync-test.git",
+            "baseurl": "${BASEURL_TEST_IDS}"
+        },
+        "T-BC/T-TSC Tests": {
             "repository": "vse-sync-test.git",
             "baseurl": "${BASEURL_TEST_IDS}"
         }
