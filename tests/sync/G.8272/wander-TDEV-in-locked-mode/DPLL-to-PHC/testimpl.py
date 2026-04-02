@@ -21,20 +21,15 @@ from vse_sync_pp.parsers.ts2phc import TimeErrorParser
 from vse_sync_pp.analyzers.ts2phc import TimeDeviationAnalyzer
 from vse_sync_pp.analyzers.analyzer import Config
 
+import yaml
+
 CONFIG = joinpath(dirname(__file__), 'config.yaml')
 
 
 def _get_display_name(config_path):
-    """Read display_name value from a YAML config file."""
-    try:
-        with open(config_path, encoding='utf-8') as fid:
-            for line in fid:
-                if line.strip().startswith('display_name:'):
-                    val = line.split(':', 1)[1].strip().strip('"').strip("'")
-                    return val
-    except OSError:
-        pass
-    return ''
+    """Read display_name from YAML config file."""
+    with open(config_path, encoding='utf-8') as fid:
+        return yaml.safe_load(fid).get('display_name', '')
 
 
 def refimpl(filename, config, interface=None, encoding='utf-8'):
