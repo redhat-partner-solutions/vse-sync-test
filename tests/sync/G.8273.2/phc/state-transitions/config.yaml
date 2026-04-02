@@ -1,5 +1,4 @@
 ---
-# Human-readable name for PDF / JUnit (see testdrive.junit.create --tests-root)
 display_name: "Verify PHC state transitions"
 parameters:
   min-test-duration/s: 1000

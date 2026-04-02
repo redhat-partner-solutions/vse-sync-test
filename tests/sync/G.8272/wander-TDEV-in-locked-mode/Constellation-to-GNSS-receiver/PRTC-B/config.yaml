@@ -1,4 +1,5 @@
 ---
+display_name: "Verify TDEV (Time Deviation in locked mode) on path of constellation to GNSS receiver in locked condition PRTC-B (Lower accuracy (e.g. for holdover or less precise references))"
 requirements: G.8272/PRTC-B
 parameters:
   transient-period/s: 300

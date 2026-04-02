@@ -4,7 +4,6 @@
 
 from argparse import ArgumentParser
 import json
-import os
 from urllib.parse import parse_qs
 
 from xml.etree import ElementTree as ET
@@ -12,47 +11,6 @@ from xml.etree import ElementTree as ET
 from ..cases import summarize
 from ..common import open_input
 from ..uri import UriBuilder
-
-
-def _read_display_name_from_config_yaml(path):
-    """Return display_name value from config.yaml if present (single-line key)."""
-    try:
-        with open(path, encoding="utf-8") as fid:
-            for line in fid:
-                stripped = line.strip()
-                if stripped.startswith("display_name:"):
-                    val = stripped[len("display_name:"):].strip()
-                    if len(val) >= 2 and val[0] == val[-1] and val[0] in "\"'":
-                        return val[1:-1]
-                    return val
-    except OSError:
-        pass
-    return None
-
-
-def _read_display_name_txt(path):
-    """Return first non-empty line from display_name.txt."""
-    try:
-        with open(path, encoding="utf-8") as fid:
-            for line in fid:
-                line = line.strip()
-                if line:
-                    return line
-    except OSError:
-        pass
-    return None
-
-
-def _load_display_name_from_tests(tests_root, rel_url_path):
-    """Load human-readable name from tests/.../config.yaml or tests/.../display_name.txt."""
-    if not tests_root or not rel_url_path:
-        return None
-    base = os.path.join(tests_root, rel_url_path.rstrip("/"))
-    cfg = os.path.join(base, "config.yaml")
-    name = _read_display_name_from_config_yaml(cfg)
-    if name:
-        return name
-    return _read_display_name_txt(os.path.join(base, "display_name.txt"))
 
 
 def _buildattrs(**kwargs):
@@ -200,7 +158,6 @@ def junit(
     baseurl_ids=None,
     baseurl_specs=None,
     prettify=False,
-    tests_root=None,
 ):
     """Return JUnit output for test `cases` in `suite`.
 
@@ -211,11 +168,7 @@ def junit(
     `exclude` is a sequence of keys to omit from the JSON object in system-out;
     `baseurl_ids` is the base URL for test ids;
     `baseurl_specs` is the base URL for test specifications;
-    if `prettify` then indent XML output;
-    `tests_root` is the absolute path to the `tests/` directory (sibling of test
-    implementations); when set, each test may supply a human-readable name via
-    `display_name` in config.yaml or a line in display_name.txt under its case
-    directory (see _load_display_name_from_tests).
+    if `prettify` then indent XML output.
 
     Each case must supply values for keys:
         id - the test URI
@@ -225,6 +178,8 @@ def junit(
     Each case may supply values for keys:
         timestamp - ISO 8601 string of UTC time when the test was started
         duration - test duration in seconds
+        pdf_display_name - human-readable test title produced by the test run;
+            when present it is used as the display name in JUnit/PDF output
 
     If `timestamp` is supplied then `duration` must also be supplied.
 
@@ -244,127 +199,6 @@ def junit(
         uri_builder = UriBuilder(baseurl_ids)
     base_stripped = baseurl_ids.rstrip("/") if baseurl_ids else ""
 
-    def _strip_path_prefix(path):
-        """Remove sync/G.8272/ and sync/G.8273.2/ from path for shorter display."""
-        for prefix in ("sync/G.8272/", "sync/G.8273.2/"):
-            if path.startswith(prefix):
-                return path[len(prefix):]
-        return path
-
-    # Human-readable test descriptions for PDF (test identifier and test case name)
-    # Keys are path prefixes (metric/segment); match longest prefix first
-    _TEST_DESCRIPTIONS = (
-        (
-            "time-error-in-locked-mode/1PPS-to-DPLL",
-            "Verify time error on path of 1PPS input to 1PPS output of DPLL in locked condition",
-        ),
-        ("time-error-in-locked-mode/DPLL-to-PHC", "Verify time error on path of DPLL to PHC in locked condition"),
-        ("time-error-in-locked-mode/SMA1-to-DPLL", "Verify time error on path of SMA1 to DPLL in locked condition"),
-        (
-            "time-error-in-locked-mode/Constellation-to-GNSS-receiver",
-            "Verify time error on path of constellation to GNSS receiver in locked condition",
-        ),
-        (
-            "time-error-in-locked-mode/PHC-to-SYS",
-            "Verify time error on path of PHC to system clock in locked condition",
-        ),
-        ("time-error-in-locked-mode/PTP4L-to-PHC", "Verify time error on path of PTP4L to PHC in locked condition"),
-        (
-            "time-error-in-locked-mode/system-test-PHC-to-SYS",
-            "Verify time error on path of PHC to system clock in locked condition (system test)",
-        ),
-        (
-            "wander-TDEV-in-locked-mode/1PPS-to-DPLL",
-            "Verify TDEV (Time Deviation in locked mode) on path of 1PPS input to "
-            "1PPS output of DPLL in locked condition",
-        ),
-        (
-            "wander-TDEV-in-locked-mode/DPLL-to-PHC",
-            "Verify TDEV (Time Deviation in locked mode) on path of DPLL to PHC in locked condition",
-        ),
-        (
-            "wander-TDEV-in-locked-mode/SMA1-to-DPLL",
-            "Verify TDEV (Time Deviation in locked mode) on path of SMA1 to DPLL in locked condition",
-        ),
-        (
-            "wander-TDEV-in-locked-mode/Constellation-to-GNSS-receiver",
-            "Verify TDEV (Time Deviation in locked mode) on path of constellation to "
-            "GNSS receiver in locked condition",
-        ),
-        (
-            "wander-TDEV-in-locked-mode/system-test-PHC-to-SYS",
-            "Verify TDEV (Time Deviation in locked mode) on path of PHC to system clock "
-            "in locked condition (system test)",
-        ),
-        (
-            "wander-MTIE-in-locked-mode/1PPS-to-DPLL",
-            "Verify MTIE (Maximum Time Interval Error) on path of 1PPS input to 1PPS "
-            "output of DPLL in locked condition",
-        ),
-        (
-            "wander-MTIE-in-locked-mode/DPLL-to-PHC",
-            "Verify MTIE (Maximum Time Interval Error) on path of DPLL to PHC in locked condition",
-        ),
-        (
-            "wander-MTIE-in-locked-mode/SMA1-to-DPLL",
-            "Verify MTIE (Maximum Time Interval Error) on path of SMA1 to DPLL in locked condition",
-        ),
-        (
-            "wander-MTIE-in-locked-mode/Constellation-to-GNSS-receiver",
-            "Verify MTIE (Maximum Time Interval Error) on path of constellation to GNSS "
-            "receiver in locked condition",
-        ),
-        (
-            "wander-MTIE-in-locked-mode/system-test-PHC-to-SYS",
-            "Verify MTIE (Maximum Time Interval Error) on path of PHC to system clock in "
-            "locked condition (system test)",
-        ),
-        (
-            "TDEV-in-locked-mode/1PPS-to-DPLL",
-            "Verify TDEV (Time Deviation in locked mode) on path of 1PPS input to 1PPS "
-            "output of DPLL in locked condition",
-        ),
-        (
-            "TDEV-in-locked-mode/DPLL-to-PHC",
-            "Verify TDEV (Time Deviation in locked mode) on path of DPLL to PHC in locked condition",
-        ),
-        (
-            "TDEV-in-locked-mode/SMA1-to-DPLL",
-            "Verify TDEV (Time Deviation in locked mode) on path of SMA1 to DPLL in locked condition",
-        ),
-        (
-            "TDEV-in-locked-mode/PTP4L-to-PHC",
-            "Verify TDEV (Time Deviation in locked mode) on path of PTP4L to PHC in locked condition",
-        ),
-        (
-            "MTIE-for-LPF-filtered-series/1PPS-to-DPLL",
-            "Verify MTIE (Maximum Time Interval Error) on path of 1PPS input to 1PPS output "
-            "of DPLL in locked condition",
-        ),
-        (
-            "MTIE-for-LPF-filtered-series/DPLL-to-PHC",
-            "Verify MTIE (Maximum Time Interval Error) on path of DPLL to PHC in locked condition",
-        ),
-        (
-            "MTIE-for-LPF-filtered-series/SMA1-to-DPLL",
-            "Verify MTIE (Maximum Time Interval Error) on path of SMA1 to DPLL in locked condition",
-        ),
-        (
-            "MTIE-for-LPF-filtered-series/PTP4L-to-PHC",
-            "Verify MTIE (Maximum Time Interval Error) on path of PTP4L to PHC in locked condition",
-        ),
-        ("phc/state-transitions", "Verify PHC state transitions"),
-        ("ptp-workload", "Verify clock accuracy under PTP workload"),
-    )
-
-    def _path_to_description(path):
-        """Return human-readable description for path, or None if no match."""
-        # Match longest prefix first
-        for prefix, desc in sorted(_TEST_DESCRIPTIONS, key=lambda x: -len(x[0])):
-            if path.startswith(prefix):
-                return desc
-        return None
-
     # Build interface name -> card-N mapping (ens3f0->card-1, ens3f1->card-2, etc.)
     _unique_names = set()
     for case in cases:
@@ -376,48 +210,20 @@ def junit(
                 _unique_names.update(params["name"])
     _name_to_card = {n: f"card-{i + 1}" for i, n in enumerate(sorted(_unique_names))}
 
-    def _display_name(case_id):
-        """Use human-readable description for PDF when available, else path-based name.
-        Prefer display_name from tests/.../config.yaml or display_name.txt when tests_root
-        is set. Otherwise use legacy path table. Always append variant (PRTC-A, PRTC-B,
-        Class-C, RAN) and card [card-N] when present for legacy names only."""
-        if base_stripped and case_id.startswith(base_stripped):
-            path_part, _, query_part = case_id[len(base_stripped):].lstrip("/").partition("?")
-            path_full = path_part.rstrip("/")
-            explicit = _load_display_name_from_tests(tests_root, path_full)
-            if explicit is not None:
-                result = explicit
+    def _display_name(case):
+        """Human-readable PDF name from the test result JSON with [card-N] appended."""
+        case_id = case.get("id", "")
+        desc = case.get("pdf_display_name")
+        if desc:
+            if base_stripped and case_id.startswith(base_stripped):
+                _, _, query_part = case_id[len(base_stripped):].lstrip("/").partition("?")
                 if query_part:
                     params = parse_qs(query_part)
                     if "name" in params and params["name"]:
                         iface = params["name"][0]
                         card = _name_to_card.get(iface, iface)
-                        result = f"{result} [{card}]"
-                return result
-            path = _strip_path_prefix(path_full)
-            # Extract variant (PRTC-A, PRTC-B, Class-C, RAN) and card - keep in name
-            segments = path.split("/")
-            raw_variant = segments[-1] if segments and segments[-1] in ("PRTC-A", "PRTC-B", "Class-C", "RAN") else ""
-            variant_expand = {
-                "PRTC-A": "PRTC-A (Higher accuracy (e.g. for GNSS-based primary references))",
-                "PRTC-B": "PRTC-B (Lower accuracy (e.g. for holdover or less precise references))",
-            }
-            variant = variant_expand.get(raw_variant, raw_variant)
-            desc = _path_to_description(path)
-            if desc is not None:
-                if "MTIE" in desc and "Maximum Time Interval Error" in desc:
-                    result = f"{desc} {variant} with a 0.1 Hz low-pass filter".strip()
-                else:
-                    result = f"{desc} {variant}".strip() if variant else desc
-            else:
-                result = path
-            if query_part:
-                params = parse_qs(query_part)
-                if "name" in params and params["name"]:
-                    iface = params["name"][0]
-                    card = _name_to_card.get(iface, iface)
-                    result = f"{result} [{card}]"
-            return result
+                        desc = f"{desc} [{card}]"
+            return desc
         return case_id
 
     summary = summarize(cases)
@@ -437,7 +243,7 @@ def junit(
         time=time_total,
     )
     for case in cases:
-        display_name = _display_name(case["id"]) if baseurl_ids else case["id"]
+        display_name = _display_name(case) if baseurl_ids else case["id"]
         e_case = _testcase(suite, display_name, time=case.get("duration"))
         if case["result"] is False:
             e_case.append(_failure(case["reason"]))
@@ -498,13 +304,6 @@ def main():
         help="The base URL which test specifications are relative to.",
     )
     aparser.add_argument(
-        "--tests-root",
-        help=(
-            "Absolute path to tests/; loads display_name from each case's "
-            "config.yaml or display_name.txt."
-        ),
-    )
-    aparser.add_argument(
         "suite",
         help="The name of the test suite. (Used in JUnit output.)",
     )
@@ -524,7 +323,6 @@ def main():
             args.baseurl_ids,
             args.baseurl_specs,
             args.prettify,
-            args.tests_root,
         )
     )
 

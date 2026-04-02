@@ -1,13 +1,9 @@
-#!/usr/bin/env python3
-
 ### SPDX-License-Identifier: GPL-2.0-only
 
 """A reference implementation for test under:
 
 sync/G.8272/phc/state-transitions
 
-The PDF report title for this test is set in config.yaml as ``display_name``
-(used by testdrive.junit.create when invoked with ``--tests-root``).
 """
 
 from argparse import ArgumentParser
@@ -25,6 +21,19 @@ from vse_sync_pp.analyzers.pmc import ClockStateAnalyzer
 from vse_sync_pp.analyzers.analyzer import Config
 
 CONFIG = joinpath(dirname(__file__), 'config.yaml')
+
+
+def _get_display_name(config_path):
+    """Read display_name value from a YAML config file."""
+    try:
+        with open(config_path, encoding='utf-8') as fid:
+            for line in fid:
+                if line.strip().startswith('display_name:'):
+                    val = line.split(':', 1)[1].strip().strip('"').strip("'")
+                    return val
+    except OSError:
+        pass
+    return ''
 
 
 def refimpl(filename, encoding='utf-8'):
@@ -46,6 +55,7 @@ def refimpl(filename, encoding='utf-8'):
         'timestamp': analyzer.timestamp,
         'duration': analyzer.duration,
         'analysis': analyzer.analysis,
+        'pdf_display_name': _get_display_name(CONFIG),
     }
 
 

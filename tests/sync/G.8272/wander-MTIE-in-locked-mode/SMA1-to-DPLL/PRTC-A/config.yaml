@@ -1,4 +1,5 @@
 ---
+display_name: "Verify MTIE (Maximum Time Interval Error) on path of SMA1 to DPLL in locked condition PRTC-A (Higher accuracy (e.g. for GNSS-based primary references)) with a 0.1 Hz low-pass filter"
 requirements: G.8272/PRTC-A
 parameters:
   transient-period/s: 300
