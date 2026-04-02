@@ -22,7 +22,15 @@ from vse_sync_pp.parsers.pmc import ClockClassParser
 from vse_sync_pp.analyzers.pmc import ClockStateAnalyzer
 from vse_sync_pp.analyzers.analyzer import Config
 
+import yaml
+
 CONFIG = joinpath(dirname(__file__), 'config.yaml')
+
+
+def _get_display_name(config_path):
+    """Read display_name from YAML config file."""
+    with open(config_path, encoding='utf-8') as fid:
+        return yaml.safe_load(fid).get('display_name', '')
 
 
 def refimpl(filename, encoding='utf-8'):
@@ -44,6 +52,7 @@ def refimpl(filename, encoding='utf-8'):
         'timestamp': analyzer.timestamp,
         'duration': analyzer.duration,
         'analysis': analyzer.analysis,
+        'pdf_display_name': _get_display_name(CONFIG),
     }
 
 

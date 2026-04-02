@@ -13,6 +13,8 @@ RUN mkdir -p ${VSE_DIR}
 WORKDIR ${VSE_DIR}
 
 RUN git clone -v --depth=1 https://github.com/redhat-partner-solutions/vse-sync-test-report.git
+# Overlay: clickable GitHub tree links for *test identifier* in PDF (human-readable name unchanged).
+COPY contrib/vse-sync-test-report/src/testdrive/asciidoc.py ${VSE_DIR}/vse-sync-test-report/src/testdrive/asciidoc.py
 
 RUN git clone -v --depth=1 https://github.com/redhat-partner-solutions/vse-sync-test.git
 
