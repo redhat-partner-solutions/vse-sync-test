@@ -17,7 +17,7 @@ ARG VSE_SYNC_TEST_REPORT_REPO=https://github.com/redhat-partner-solutions/vse-sy
 ARG VSE_SYNC_TEST_REPO=https://github.com/redhat-partner-solutions/vse-sync-test.git
 ARG VSE_SYNC_TEST_REF=newvsevarun
 ARG VSE_COLLECTION_TOOLS_REPO=https://github.com/v72singh/vse-sync-collection-tools.git
-ARG VSE_COLLECTION_TOOLS_REF=varun-collector
+ARG VSE_COLLECTION_TOOLS_REF=varuncollector-tool
 
 RUN git clone -v --depth=1 ${VSE_SYNC_TEST_REPORT_REPO}
 RUN git clone -v --depth=1 -b ${VSE_SYNC_TEST_REF} ${VSE_SYNC_TEST_REPO}
