@@ -368,9 +368,12 @@ EOF
     fi
 
     for row in $(jq -c .[] $DEVJSON); do
-        add_phc_tests $row
-        if [ $(echo $row |  jq -r .primary) = false ]; then
-            add_sma1_tests $row
+        ptp_dev=$(echo "$row" | jq -r '.ptp_dev // empty')
+        if [ -n "$ptp_dev" ]; then
+            add_phc_tests "$row"
+        fi
+        if [ "$(echo "$row" | jq -r .primary)" = false ]; then
+            add_sma1_tests "$row"
         fi
     done
 
