@@ -107,7 +107,7 @@ esac
 detect_configured_cards() {
     pushd "$COLLECTORPATH" >/dev/null 2>&1
     echo "Detecting cards configured in ptpconfig. Please wait..."
-    go run main.go detect --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format --clock-type="$TEST_MODE" > $DEVJSON
+    go run main.go detect --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format --clock-type="$TEST_MODE" > "$DEVJSON" 2>"$DATADIR/detect.log"
 }
 
 
@@ -192,8 +192,13 @@ verify_env(){
     local junit_template
     junit_template=$(printf '.[].data + {"timestamp": "%s", "duration": 0}' "$dt")
     set +e
-    LOCAL_INTERFACE_NAME=$(jq '.[] | select(.primary == true).name' $DEVJSON)
-    go run main.go env verify --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format --clock-type="$TEST_MODE" > $ENVJSONRAW
+    LOCAL_INTERFACE_NAME=$(jq -r '.[] | select(.primary == true) | .name' "$DEVJSON")
+    if [ -z "$LOCAL_INTERFACE_NAME" ]; then
+        echo "$0: error: no primary interface in $DEVJSON" 1>&2
+        cat "$DEVJSON" 1>&2
+        exit 1
+    fi
+    go run main.go env verify --interface="$LOCAL_INTERFACE_NAME" --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format --clock-type="$TEST_MODE" > "$ENVJSONRAW" 2>"$ARTEFACTDIR/env-verify.log"
 
     if [ $? -gt 0 ]
     then
