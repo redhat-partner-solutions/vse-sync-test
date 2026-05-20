@@ -12,10 +12,16 @@ ENV VSE_DIR=/usr/vse
 RUN mkdir -p ${VSE_DIR}
 WORKDIR ${VSE_DIR}
 
-RUN git clone -v --depth=1 https://github.com/redhat-partner-solutions/vse-sync-test-report.git
-RUN git clone -v --depth=1 https://github.com/redhat-partner-solutions/vse-sync-test.git
+# Pin branches that include GNRD ts2phc detect fixes (override at build time if needed).
+ARG VSE_SYNC_TEST_REPORT_REPO=https://github.com/redhat-partner-solutions/vse-sync-test-report.git
+ARG VSE_SYNC_TEST_REPO=https://github.com/redhat-partner-solutions/vse-sync-test.git
+ARG VSE_SYNC_TEST_REF=newvsevarun
+ARG VSE_COLLECTION_TOOLS_REPO=https://github.com/v72singh/vse-sync-collection-tools.git
+ARG VSE_COLLECTION_TOOLS_REF=varun-collector
 
-RUN git clone -v https://github.com/redhat-partner-solutions/vse-sync-collection-tools.git
+RUN git clone -v --depth=1 ${VSE_SYNC_TEST_REPORT_REPO}
+RUN git clone -v --depth=1 -b ${VSE_SYNC_TEST_REF} ${VSE_SYNC_TEST_REPO}
+RUN git clone -v --depth=1 -b ${VSE_COLLECTION_TOOLS_REF} ${VSE_COLLECTION_TOOLS_REPO}
 WORKDIR ${VSE_DIR}/vse-sync-collection-tools
 RUN go mod vendor
 
