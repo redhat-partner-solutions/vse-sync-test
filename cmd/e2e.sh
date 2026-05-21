@@ -205,7 +205,7 @@ verify_env(){
         cat $ENVJSONRAW
     else
 
-        cat $ENVJSONRAW | jq -s -c "$junit_template" > $ENVJSON
+        grep -E '^\{"data":\{"analysis"' "$ENVJSONRAW" | jq -s -c "$junit_template" > $ENVJSON
     fi
     set -e
     popd >/dev/null 2>&1
