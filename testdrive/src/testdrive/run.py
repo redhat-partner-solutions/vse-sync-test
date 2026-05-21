@@ -3,6 +3,7 @@
 """Run tests"""
 
 import json
+import re
 from argparse import ArgumentParser
 import sys
 import os
@@ -10,6 +11,7 @@ import subprocess
 from datetime import datetime, timezone
 
 from .common import open_input, print_line
+from .json_util import dumps as json_dumps
 from .source import Source, sequence
 from .uri import UriBuilder
 
@@ -120,6 +122,11 @@ def main():
         ),
     )
     aparser.add_argument(
+        "--skip-plot-pattern",
+        default=None,
+        help="Skip plot generation when the test path matches this regex (e.g. wander plots).",
+    )
+    aparser.add_argument(
         "baseurl",
         help="The base URL which test ids are relative to.",
     )
@@ -138,6 +145,11 @@ def main():
     args = aparser.parse_args()
     basedir = args.basedir or os.path.dirname(args.input)
     builder = UriBuilder(args.baseurl)
+    skip_plot_re = (
+        re.compile(args.skip_plot_pattern)
+        if args.skip_plot_pattern
+        else None
+    )
     with open_input(args.input) as fid:
         source = Source(sequence(json.loads(line) for line in fid))
         for test, *test_args in source.next():
@@ -155,14 +167,24 @@ def main():
                 result["duration"] = (end - start).total_seconds()
             if result["result"] in (True, False) and args.imagedir:
                 plotter = os.path.join(os.path.dirname(testimpl), args.plotter)
-                if os.path.isfile(plotter):
+                skip_plot = skip_plot_re is not None and skip_plot_re.search(test)
+                if skip_plot:
+                    pass
+                elif os.path.isfile(plotter):
                     prefix = os.path.join(
                         args.imagedir,
                         os.path.splitext(test)[0].strip("/").replace("/", "_"),
                     )
-                    result["plot"] = plot(plotter, prefix, *test_args)
+                    print(f"plot: {test}", file=sys.stderr, flush=True)
+                    try:
+                        result["plot"] = plot(plotter, prefix, *test_args)
+                    except RuntimeError as exc:
+                        print(
+                            f"warning: plot failed for {test}: {exc}",
+                            file=sys.stderr,
+                        )
             # Python exits with error code 1 on EPIPE
-            if not print_line(json.dumps(result)):
+            if not print_line(json_dumps(result)):
                 sys.exit(1)
 
 

@@ -10,6 +10,7 @@ from xml.etree import ElementTree as ET
 
 from ..cases import summarize
 from ..common import open_input
+from ..json_util import dumps as json_dumps
 from ..uri import UriBuilder
 
 
@@ -131,7 +132,7 @@ def _system_out(case, exclude=()):
     having omitted pairs for keys in `exclude`.
     """
     elem = ET.Element("system-out")
-    elem.text = json.dumps(
+    elem.text = json_dumps(
         {k: v for (k, v) in case.items() if k not in exclude},
         sort_keys=True,
         indent=4,

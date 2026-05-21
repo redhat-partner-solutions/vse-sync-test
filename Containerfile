@@ -12,22 +12,19 @@ ENV VSE_DIR=/usr/vse
 RUN mkdir -p ${VSE_DIR}
 WORKDIR ${VSE_DIR}
 
-# Pin branches that include GNRD ts2phc detect fixes (override at build time if needed).
-ARG VSE_SYNC_TEST_REPORT_REPO=https://github.com/redhat-partner-solutions/vse-sync-test-report.git
-ARG VSE_SYNC_TEST_REPO=https://github.com/redhat-partner-solutions/vse-sync-test.git
-ARG VSE_SYNC_TEST_REF=newvsevarun
-ARG VSE_COLLECTION_TOOLS_REPO=https://github.com/v72singh/vse-sync-collection-tools.git
-ARG VSE_COLLECTION_TOOLS_REF=varuncollector-tool
-
-RUN git clone -v --depth=1 ${VSE_SYNC_TEST_REPORT_REPO}
-RUN git clone -v --depth=1 -b ${VSE_SYNC_TEST_REF} ${VSE_SYNC_TEST_REPO}
-RUN git clone -v --depth=1 -b ${VSE_COLLECTION_TOOLS_REF} ${VSE_COLLECTION_TOOLS_REPO}
+# Build from the parent directory that contains all three repos, e.g.:
+#   podman build -f vse-sync-test/Containerfile -t localhost/boundary:latest .
+COPY vse-sync-test-report/ ${VSE_DIR}/vse-sync-test-report/
+COPY vse-sync-test/ ${VSE_DIR}/vse-sync-test/
+COPY vse-sync-collection-tools/ ${VSE_DIR}/vse-sync-collection-tools/
 WORKDIR ${VSE_DIR}/vse-sync-collection-tools
 RUN go mod vendor
 
 WORKDIR ${VSE_DIR}
-# GNRD defaults: log demux, no DPLL netlink collector, no wander plots (faster PDF path).
+# GNRD defaults: log demux, no DPLL netlink collector, full plots in PDF (no PDF timeout).
 ENV VSE_DEMUX_DPLL_FROM_LOG=1
 ENV GNRD_SKIP_DPLL_COLLECTOR=1
-ENV E2E_SKIP_PLOTS=1
+ENV E2E_SKIP_PLOTS=0
+ENV E2E_SKIP_WANDER_PLOTS=0
+ENV E2E_PDF_TIMEOUT_SEC=0
 CMD ["./vse-sync-test/cmd/e2e.sh", "-d", "2000s", "/usr/vse/kubeconfig"]

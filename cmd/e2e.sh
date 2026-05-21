@@ -50,8 +50,11 @@ NAMESPACE=openshift-ptp
 NODE_NAME="$PTPNODENAME"
 DIFF_LOG=0
 TEST_MODE="${PTPTESTMODE:-gm}" # Options: "gm" (T-GM), "bc" (boundary clock)
-# Wander MTIE/TDEV plots over 2000s datasets are very slow; skip unless explicitly enabled.
-E2E_SKIP_PLOTS="${E2E_SKIP_PLOTS:-1}"
+# Plots in PDF (time-error and wander). Set E2E_SKIP_PLOTS=1 to disable all graphs.
+E2E_SKIP_PLOTS="${E2E_SKIP_PLOTS:-0}"
+E2E_SKIP_WANDER_PLOTS="${E2E_SKIP_WANDER_PLOTS:-0}"
+# PDF build timeout in seconds; 0 means no limit (recommended when wander plots are enabled).
+E2E_PDF_TIMEOUT_SEC="${E2E_PDF_TIMEOUT_SEC:-0}"
 # GNRD: no per-NIC DPLL netlink/sysfs; use linuxptp gnss[]/dpll[] log demux instead.
 VSE_DEMUX_DPLL_FROM_LOG="${VSE_DEMUX_DPLL_FROM_LOG:-1}"
 # GNRD main collect skips the DPLL collector (netlink probe is slow and always fails).
@@ -526,8 +529,18 @@ EOF
         env PYTHONPATH=$TDPATH:$PPPATH python3 -m testdrive.run \
             --basedir="$ANALYSERPATH/tests" "$BASEURL_TEST_IDS" $ARTEFACTDIR/testdrive_config.json
     else
-        env PYTHONPATH=$TDPATH:$PPPATH python3 -m testdrive.run \
-            --basedir="$ANALYSERPATH/tests" --imagedir="$PLOTDIR" "$BASEURL_TEST_IDS" $ARTEFACTDIR/testdrive_config.json
+        if [ "$E2E_SKIP_WANDER_PLOTS" = "1" ]; then
+            echo "Generating plots (wander MTIE/TDEV plots skipped)." >&2
+            env PYTHONPATH=$TDPATH:$PPPATH python3 -m testdrive.run \
+                --basedir="$ANALYSERPATH/tests" --imagedir="$PLOTDIR" \
+                --skip-plot-pattern='wander-(TDEV|MTIE)' \
+                "$BASEURL_TEST_IDS" $ARTEFACTDIR/testdrive_config.json
+        else
+            echo "Generating plots including wander MTIE/TDEV (this may take a long time)." >&2
+            env PYTHONPATH=$TDPATH:$PPPATH python3 -m testdrive.run \
+                --basedir="$ANALYSERPATH/tests" --imagedir="$PLOTDIR" \
+                "$BASEURL_TEST_IDS" $ARTEFACTDIR/testdrive_config.json
+        fi
     fi
 
     popd >/dev/null 2>&1
@@ -622,15 +635,25 @@ EOF
     make CONFIG="$config" JUNIT="$FULLJUNIT" OBJ="$REPORTARTEFACTDIR" BUILDER=native "GIT_HASH=$git_hash" clean
 
     pdf_make_args="CONFIG=$config ATTRIBUTES=allow-uri-read JUNIT=$FULLJUNIT OBJ=$REPORTARTEFACTDIR BUILDER=native GIT_HASH=$git_hash"
+    run_pdf_make() {
+        if [ -n "$E2E_PDF_TIMEOUT_SEC" ] && [ "$E2E_PDF_TIMEOUT_SEC" -gt 0 ] 2>/dev/null; then
+            echo "Building PDF (timeout ${E2E_PDF_TIMEOUT_SEC}s)..." >&2
+            # shellcheck disable=SC2086
+            timeout "$E2E_PDF_TIMEOUT_SEC" make "$@" \
+                || { echo "PDF generation timed out after ${E2E_PDF_TIMEOUT_SEC}s" >&2; exit 1; }
+        else
+            echo "Building PDF (no timeout)..." >&2
+            # shellcheck disable=SC2086
+            make "$@"
+        fi
+    }
     if [ -d "$REPORTPRIVSUTGENPATH" ];
     then
         # shellcheck disable=SC2086
-        timeout 600 make $pdf_make_args ADOC=$REPORTPRIVSUTGENPATH/doc/setup.adoc PNG=$REPORTPRIVSUTGENPATH/doc/testreport.png all \
-            || { echo "PDF generation timed out after 600s" >&2; exit 1; }
+        run_pdf_make $pdf_make_args ADOC=$REPORTPRIVSUTGENPATH/doc/setup.adoc PNG=$REPORTPRIVSUTGENPATH/doc/testreport.png all
     else
         # shellcheck disable=SC2086
-        timeout 600 make $pdf_make_args all \
-            || { echo "PDF generation timed out after 600s" >&2; exit 1; }
+        run_pdf_make $pdf_make_args all
     fi
 
     if [ ! -f "$REPORTARTEFACTDIR/test-report.pdf" ]; then
