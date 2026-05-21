@@ -18,6 +18,14 @@ class TestTimeErrorParser(TestCase, metaclass=ParserTestBuilder):
     id_ = 'gnss/time-error'
     elems = ('timestamp', 'state', 'terror')
     accept = (
+        (
+            'gnss[1779342093]:[ts2phc.0.config]  gnss_status 3 offset 2 s2',
+            (Decimal('1779342093'), 3, 2),
+        ),
+        (
+            'gnss[1779342093]:[ts2phc.0.config] eno8703np0 gnss_status 3 offset 2 s2',
+            (Decimal('1779342093'), 3, 2),
+        ),
         ('681011.839,5,-3',
          (Decimal('681011.839'), 5, -3)),
         ('2023-06-16T17:01:11.131Z,1,400',

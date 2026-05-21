@@ -261,26 +261,27 @@ collect_data(){
 
 
 add_phc_tests() {
-    master_ptp_clock_dev=$(echo $1 |  jq -r .ptp_dev)
+    # ts2phc log lines are keyed by netdev name, not /dev/ptpN
+    local_interface_name=$(echo "$1" | jq -r .name)
 
     # Add G.8272 PHC tests if mode is "gm"
     if [ "$TEST_MODE" = "gm" ]; then
         cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
-["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
-["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
-["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
-["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
-["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
-["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
+["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE", "$local_interface_name", $1]
+["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE", "$local_interface_name", $1]
+["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE", "$local_interface_name", $1]
+["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE", "$local_interface_name", $1]
+["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE", "$local_interface_name", $1]
+["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE", "$local_interface_name", $1]
 EOF
     fi
 
     # Add G.8273.2 PHC tests if mode is "bc"
     if [ "$TEST_MODE" = "bc" ]; then
         cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
-["sync/G.8273.2/time-error-in-locked-mode/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
-["sync/G.8273.2/TDEV-in-locked-mode/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
-["sync/G.8273.2/MTIE-for-LPF-filtered-series/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", $1]
+["sync/G.8273.2/time-error-in-locked-mode/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE", "$local_interface_name", $1]
+["sync/G.8273.2/TDEV-in-locked-mode/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE", "$local_interface_name", $1]
+["sync/G.8273.2/MTIE-for-LPF-filtered-series/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE", "$local_interface_name", $1]
 EOF
     fi
 }
@@ -311,6 +312,35 @@ EOF
 }
 
 
+# Demux collector output; if empty, parse linuxptp operator logs instead.
+demux_or_parse_from_log() {
+    parser_id="$1"
+    outfile="$2"
+    collect_file="${3:-$COLLECTED_DATA_FILE}"
+    PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux "$collect_file" "$parser_id" >"$outfile" 2>/dev/null || true
+    if [ ! -s "$outfile" ] && [ -f "$PTP_DAEMON_LOGFILE" ]; then
+        PYTHONPATH=$PPPATH python3 -m vse_sync_pp.parse "$PTP_DAEMON_LOGFILE" "$parser_id" >"$outfile"
+    fi
+}
+
+demux_or_parse_dpll_from_log() {
+    parser_id="$1"
+    outfile="$2"
+    interface_name="$3"
+    collect_file="${4:-$COLLECTED_DATA_FILE}"
+    PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux "$collect_file" "$parser_id" >"$outfile" 2>/dev/null || true
+    if [ ! -s "$outfile" ] && [ -f "$PTP_DAEMON_LOGFILE" ]; then
+        if [ -n "$interface_name" ]; then
+            grep -E "^dpll\\[[0-9]+\\]:.*[[:space:]]${interface_name}[[:space:]]" \
+                "$PTP_DAEMON_LOGFILE" | \
+                PYTHONPATH=$PPPATH python3 -m vse_sync_pp.parse --interface="$interface_name" - \
+                "$parser_id" >"$outfile"
+        else
+            PYTHONPATH=$PPPATH python3 -m vse_sync_pp.parse "$PTP_DAEMON_LOGFILE" "$parser_id" >"$outfile"
+        fi
+    fi
+}
+
 analyse_data() {
     pushd "$ANALYSERPATH" >/dev/null 2>&1
 
@@ -319,16 +349,19 @@ analyse_data() {
 
     # Only process GNSS data for T-GM mode (BC doesn't use GNSS constellation tests)
     if [ "$TEST_MODE" = "gm" ]; then
-        PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'gnss/time-error' > $GNSS_DEMUXED_PATH
+        demux_or_parse_from_log 'gnss/time-error' "$GNSS_DEMUXED_PATH"
     fi
 
-    PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'dpll/time-error' > $DPLL_DEMUXED_PATH
-    PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'phc/gm-settings' > $PHC_DEMUXED_PATH
+    demux_or_parse_from_log 'dpll/time-error' "$DPLL_DEMUXED_PATH"
+    demux_or_parse_from_log 'phc/gm-settings' "$PHC_DEMUXED_PATH"
 
     for row in $(jq -c .[] $DEVJSON); do
         if [ $(echo $row |  jq -r .primary) = false ]; then
             LOCAL_INTERFACE_NAME=$(echo $row |  jq -r .name)
-            PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux "${COLLECTED_DATA_FILE}_${LOCAL_INTERFACE_NAME}" 'dpll-sma1/time-error' > "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}"
+            demux_or_parse_dpll_from_log 'dpll-sma1/time-error' \
+                "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}" \
+                "$LOCAL_INTERFACE_NAME" \
+                "${COLLECTED_DATA_FILE}_${LOCAL_INTERFACE_NAME}"
         fi
     done
 

@@ -19,6 +19,10 @@ class TestTimeErrorParser(TestCase, metaclass=ParserTestBuilder):
     elems = ('timestamp', 'eecstate', 'state', 'terror')
     accept = (
         (
+            'dpll[1779342093]:[ts2phc.0.config] eno8703np0 frequency_status 3 offset 2 phase_status 3 pps_status 1 s2',
+            (Decimal('1779342093'), 3, 3, Decimal('2')),
+        ),
+        (
             '1876878.28,3,3,-0.79,-3.21',
             (Decimal('1876878.28'), 3, 3, Decimal('-0.79')),
         ),

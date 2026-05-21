@@ -32,8 +32,16 @@ def main():
         'parser', choices=tuple(PARSERS),
         help="data to parse from input",
     )
+    aparser.add_argument(
+        '--interface',
+        help="netdev name filter for dpll log lines",
+    )
     args = aparser.parse_args()
-    parser = PARSERS[args.parser]()
+    parser_cls = PARSERS[args.parser]
+    if args.interface and args.parser in ('dpll/time-error', 'dpll-sma1/time-error'):
+        parser = parser_cls(args.interface)
+    else:
+        parser = parser_cls()
     with open_input(args.input) as fid:
         for data in parser.parse(fid, relative=args.relative):
             # Python exits with error code 1 on EPIPE
