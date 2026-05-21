@@ -26,4 +26,8 @@ WORKDIR ${VSE_DIR}/vse-sync-collection-tools
 RUN go mod vendor
 
 WORKDIR ${VSE_DIR}
+# GNRD defaults: log demux, no DPLL netlink collector, no wander plots (faster PDF path).
+ENV VSE_DEMUX_DPLL_FROM_LOG=1
+ENV GNRD_SKIP_DPLL_COLLECTOR=1
+ENV E2E_SKIP_PLOTS=1
 CMD ["./vse-sync-test/cmd/e2e.sh", "-d", "2000s", "/usr/vse/kubeconfig"]
