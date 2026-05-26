@@ -1,7 +1,15 @@
-# Build from the parent directory that contains all three repos:
-#   podman build -f vse-sync-test/Containerfile -t localhost/boundary:latest .
+# Image for T-GM / BC sync testing.
 #
-# Do not use git clone here — that pulls upstream main without your detect fixes.
+# Build from a directory that contains BOTH local repos (with your detect fixes):
+#   ./vse-sync-collection-tools/
+#   ./vse-sync-test/
+#
+#   cd /path/to/parent
+#   podman build --no-cache -f vse-sync-test/Containerfile -t localhost/boundary:latest .
+#
+# Or use:  ./vse-sync-test/cmd/build-image.sh /path/to/parent
+#
+# vse-sync-test-report is cloned from GitHub (PDF templates only; not needed for detect).
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 ENV PTPNODENAME=""
@@ -16,11 +24,13 @@ ENV VSE_DIR=/usr/vse
 RUN mkdir -p ${VSE_DIR}
 WORKDIR ${VSE_DIR}
 
-# Build context must be the parent folder (see comment above).
-COPY vse-sync-test-report/ ${VSE_DIR}/vse-sync-test-report/
-COPY vse-sync-test/ ${VSE_DIR}/vse-sync-test/
+# PDF/report templates (upstream is fine; avoids requiring a third local checkout).
+RUN git clone -v --depth=1 https://github.com/redhat-partner-solutions/vse-sync-test-report.git
 
+# Your branches with detect / e2e / parser fixes — must be in the build context.
+COPY vse-sync-test/ ${VSE_DIR}/vse-sync-test/
 COPY vse-sync-collection-tools/ ${VSE_DIR}/vse-sync-collection-tools/
+
 WORKDIR ${VSE_DIR}/vse-sync-collection-tools
 RUN go mod vendor
 
