@@ -2,6 +2,7 @@
 
 """Parse GNSS log messages"""
 
+import re
 from collections import namedtuple
 
 from .parser import (Parser, parse_timestamp)
@@ -29,6 +30,21 @@ class TimeErrorParser(Parser):
         terror = int(elems[2])
         return self.parsed(timestamp, state, terror)
 
+    # linuxptp: gnss[ts]:[profile] [iface] gnss_status N offset M s2
+    _LOG_LINE_RE = re.compile(
+        r'^.*?gnss\[([0-9]+)\]:\[[^\]]+\]\s+'
+        r'(?:\S+\s+)?gnss_status\s+(-?\d+)\s+offset\s+(-?\d+)\s+(\S+)'
+    )
+
     def parse_line(self, line):
+        matched = self._LOG_LINE_RE.match(line)
+        if matched:
+            return self.make_parsed((
+                matched.group(1),
+                matched.group(2),
+                matched.group(3),
+            ))
         # GNSS samples come from a fixed format CSV file
+        if ',' not in line:
+            return None
         return self.make_parsed(line.split(','))

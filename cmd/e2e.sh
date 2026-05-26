@@ -103,8 +103,18 @@ esac
 
 detect_configured_cards() {
     pushd "$COLLECTORPATH" >/dev/null 2>&1
-    echo "Detecting cards configured in ptpconfig. Please wait..."
-    go run main.go detect --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format > $DEVJSON
+    echo "Detecting cards configured in ptpconfig. Please wait..." >&2
+    if ! go run main.go detect --nodeName="$NODE_NAME" --kubeconfig="$LOCAL_KUBECONFIG" --use-analyser-format --clock-type="$TEST_MODE" >"$DEVJSON" 2>"$DATADIR/detect.log"; then
+        echo "Interface detection failed; see $DATADIR/detect.log" >&2
+        cat "$DATADIR/detect.log" >&2
+        exit 1
+    fi
+    if ! jq -e 'type == "array" and length > 0' "$DEVJSON" >/dev/null 2>&1; then
+        echo "Interface detection produced invalid output; see $DATADIR/detect.log" >&2
+        cat "$DEVJSON" >&2
+        exit 1
+    fi
+    popd >/dev/null 2>&1
 }
 
 
@@ -118,12 +128,14 @@ if [ ! -z "$LOCAL_KUBECONFIG" ]; then
     fi
     oc project --kubeconfig=$LOCAL_KUBECONFIG $NAMESPACE # set namespace for data collection
 
-    if [ -z $NODE_NAME ]; then
+    if [ -z "$NODE_NAME" ]; then
         NUM_OF_NODES=$(oc --kubeconfig=$LOCAL_KUBECONFIG get nodes --output json | jq -j '.items | length')
         if [[ "$NUM_OF_NODES" -gt 1 ]]; then
             echo "nodeName is required for an MNO cluster test run. Please pass in the nodename linked to the interface connected to the GNSS signal"
             exit 1
         fi
+        NODE_NAME=$(oc --kubeconfig=$LOCAL_KUBECONFIG get nodes -o jsonpath='{.items[0].metadata.name}')
+        echo "Using node name ${NODE_NAME}" >&2
     fi
 else
     CLUSTER_UNDER_TEST="offline"
@@ -253,27 +265,28 @@ collect_data(){
 
 
 add_phc_tests() {
-    master_ptp_clock_dev=$(echo $1 |  jq -r .ptp_dev)
     master_interface_name=$(echo $1 | jq -r .name)
+    # ts2phc log lines use netdev names (ens3f0), not /dev/ptpN paths
+    phc_log_source="$PTP_DAEMON_LOGFILE"
 
     # Add G.8272 PHC tests if mode is "gm"
     if [ "$TEST_MODE" = "gm" ]; then
         cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
-["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", "$master_interface_name", $1]
-["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", "$master_interface_name", $1]
-["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", "$master_interface_name", $1]
-["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", "$master_interface_name", $1]
-["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", "$master_interface_name", $1]
-["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", "$master_interface_name", $1]
+["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$phc_log_source", "$master_interface_name", "$master_interface_name", $1]
+["sync/G.8272/time-error-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$phc_log_source", "$master_interface_name", "$master_interface_name", $1]
+["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$phc_log_source", "$master_interface_name", "$master_interface_name", $1]
+["sync/G.8272/wander-TDEV-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$phc_log_source", "$master_interface_name", "$master_interface_name", $1]
+["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-PHC/PRTC-A/testimpl.py", "$phc_log_source", "$master_interface_name", "$master_interface_name", $1]
+["sync/G.8272/wander-MTIE-in-locked-mode/DPLL-to-PHC/PRTC-B/testimpl.py", "$phc_log_source", "$master_interface_name", "$master_interface_name", $1]
 EOF
     fi
 
     # Add G.8273.2 PHC tests if mode is "bc"
     if [ "$TEST_MODE" = "bc" ]; then
         cat <<EOF >> $ARTEFACTDIR/testdrive_config.json
-["sync/G.8273.2/time-error-in-locked-mode/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", "$master_interface_name", $1]
-["sync/G.8273.2/TDEV-in-locked-mode/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", "$master_interface_name", $1]
-["sync/G.8273.2/MTIE-for-LPF-filtered-series/DPLL-to-PHC/Class-C/testimpl.py", "$PTP_DAEMON_LOGFILE", "$master_ptp_clock_dev", "$master_interface_name", $1]
+["sync/G.8273.2/time-error-in-locked-mode/DPLL-to-PHC/Class-C/testimpl.py", "$phc_log_source", "$master_interface_name", "$master_interface_name", $1]
+["sync/G.8273.2/TDEV-in-locked-mode/DPLL-to-PHC/Class-C/testimpl.py", "$phc_log_source", "$master_interface_name", "$master_interface_name", $1]
+["sync/G.8273.2/MTIE-for-LPF-filtered-series/DPLL-to-PHC/Class-C/testimpl.py", "$phc_log_source", "$master_interface_name", "$master_interface_name", $1]
 EOF
     fi
 }
@@ -304,6 +317,18 @@ EOF
 }
 
 
+demux_or_parse() {
+    demux_path=$1
+    parser_id=$2
+    muxed_input=$3
+    raw_log=$4
+
+    PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux "$muxed_input" "$parser_id" >"$demux_path" 2>/dev/null || true
+    if [ ! -s "$demux_path" ] && [ -f "$raw_log" ]; then
+        PYTHONPATH=$PPPATH python3 -m vse_sync_pp.parse -r "$raw_log" "$parser_id" >"$demux_path" 2>/dev/null || true
+    fi
+}
+
 analyse_data() {
     pushd "$ANALYSERPATH" >/dev/null 2>&1
 
@@ -312,16 +337,21 @@ analyse_data() {
 
     # Only process GNSS data for T-GM mode (BC doesn't use GNSS constellation tests)
     if [ "$TEST_MODE" = "gm" ]; then
-        PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'gnss/time-error' > $GNSS_DEMUXED_PATH
+        demux_or_parse "$GNSS_DEMUXED_PATH" 'gnss/time-error' "$COLLECTED_DATA_FILE" "$PTP_DAEMON_LOGFILE"
     fi
 
-    PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'dpll/time-error' > $DPLL_DEMUXED_PATH
-    PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'phc/gm-settings' > $PHC_DEMUXED_PATH
+    demux_or_parse "$DPLL_DEMUXED_PATH" 'dpll/time-error' "$COLLECTED_DATA_FILE" "$PTP_DAEMON_LOGFILE"
+    PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux $COLLECTED_DATA_FILE 'phc/gm-settings' > $PHC_DEMUXED_PATH 2>/dev/null || true
 
     for row in $(jq -c .[] $DEVJSON); do
         if [ $(echo $row |  jq -r .primary) = false ]; then
             LOCAL_INTERFACE_NAME=$(echo $row |  jq -r .name)
-            PYTHONPATH=$PPPATH python3 -m vse_sync_pp.demux "${COLLECTED_DATA_FILE}_${LOCAL_INTERFACE_NAME}" 'dpll-sma1/time-error' > "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}"
+            demux_or_parse "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}" 'dpll-sma1/time-error' \
+                "${COLLECTED_DATA_FILE}_${LOCAL_INTERFACE_NAME}" "$PTP_DAEMON_LOGFILE"
+            if [ ! -s "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}" ]; then
+                demux_or_parse "${DPLL_DEMUXED_PATH}_${LOCAL_INTERFACE_NAME}" 'dpll/time-error' \
+                    "${COLLECTED_DATA_FILE}_${LOCAL_INTERFACE_NAME}" "$PTP_DAEMON_LOGFILE"
+            fi
         fi
     done
 
