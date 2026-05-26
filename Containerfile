@@ -1,5 +1,9 @@
+# Build from the parent directory that contains all three repos:
+#   podman build -f vse-sync-test/Containerfile -t localhost/boundary:latest .
+#
+# Do not use git clone here — that pulls upstream main without your detect fixes.
+
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
-#node name should be passed in when testing an MNO cluster defaulting to SNO usecase of empty.
 ENV PTPNODENAME=""
 RUN microdnf install -y git golang python3 python3-pip tar python3-yaml jq ruby
 RUN pip3 install pandas junitparser matplotlib allantools
@@ -12,10 +16,11 @@ ENV VSE_DIR=/usr/vse
 RUN mkdir -p ${VSE_DIR}
 WORKDIR ${VSE_DIR}
 
-RUN git clone -v --depth=1 https://github.com/redhat-partner-solutions/vse-sync-test-report.git
-RUN git clone -v --depth=1 https://github.com/redhat-partner-solutions/vse-sync-test.git
+# Build context must be the parent folder (see comment above).
+COPY vse-sync-test-report/ ${VSE_DIR}/vse-sync-test-report/
+COPY vse-sync-test/ ${VSE_DIR}/vse-sync-test/
 
-RUN git clone -v https://github.com/redhat-partner-solutions/vse-sync-collection-tools.git
+COPY vse-sync-collection-tools/ ${VSE_DIR}/vse-sync-collection-tools/
 WORKDIR ${VSE_DIR}/vse-sync-collection-tools
 RUN go mod vendor
 
